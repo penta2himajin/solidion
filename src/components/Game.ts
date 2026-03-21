@@ -1,0 +1,191 @@
+/**
+ * <Game> component.
+ *
+ * Boots Phaser, creates the canvas, provides GameContext,
+ * and sets up a default Scene for L0 usage.
+ *
+ * This is a standard Solid component (runs in the DOM renderer).
+ * Children are rendered via the Solidion universal renderer into Phaser.
+ */
+
+import {
+  createSignal,
+  createEffect,
+  onCleanup,
+  untrack,
+  type JSX,
+} from "solid-js";
+import Phaser from "phaser";
+import { GameContext, SceneContext, FrameManagerContext } from "../contexts";
+import { createFrameManager, type FrameManager } from "../core/frame";
+import { solidionFrameUpdate } from "../core/sync";
+import { pushScene, popScene } from "../core/scene-stack";
+import { render } from "../renderer";
+
+export interface GameProps {
+  width?: number;
+  height?: number;
+  backgroundColor?: number | string;
+  physics?: Phaser.Types.Core.PhysicsConfig;
+  scale?: Phaser.Types.Core.ScaleConfig;
+  /** Full Phaser config override (L4). Merged with other props. */
+  config?: Partial<Phaser.Types.Core.GameConfig>;
+  /** Phaser canvas parent element. If not provided, Game creates one. */
+  parent?: HTMLElement | string;
+  children?: JSX.Element;
+}
+
+interface GameState {
+  game: Phaser.Game;
+  scene: Phaser.Scene;
+  frameManager: FrameManager;
+}
+
+/**
+ * Create and boot a Phaser game, returning a promise that resolves
+ * when the default scene is ready.
+ */
+function bootPhaser(
+  parent: HTMLElement,
+  props: GameProps
+): Promise<GameState> {
+  return new Promise((resolve) => {
+    const frameManager = createFrameManager();
+
+    const defaultSceneConfig: Phaser.Types.Scenes.SettingsConfig & {
+      create: (this: Phaser.Scene) => void;
+      update: (this: Phaser.Scene, time: number, delta: number) => void;
+    } = {
+      key: "__solidion_default",
+      active: true,
+      create() {
+        resolve({
+          game,
+          scene: this,
+          frameManager,
+        });
+      },
+      update(time: number, delta: number) {
+        solidionFrameUpdate(frameManager, time, delta);
+      },
+    };
+
+    const bgColor =
+      props.backgroundColor !== undefined
+        ? typeof props.backgroundColor === "number"
+          ? `#${props.backgroundColor.toString(16).padStart(6, "0")}`
+          : props.backgroundColor
+        : "#000000";
+
+    const gameConfig: Phaser.Types.Core.GameConfig = {
+      type: Phaser.AUTO,
+      width: props.width ?? 800,
+      height: props.height ?? 600,
+      backgroundColor: bgColor,
+      parent,
+      scene: defaultSceneConfig as any,
+      banner: false,
+      ...props.physics ? { physics: props.physics } : {},
+      ...props.scale ? { scale: props.scale } : {},
+      ...(props.config ?? {}),
+    };
+
+    const game = new Phaser.Game(gameConfig);
+  });
+}
+
+/**
+ * Game component.
+ *
+ * Usage:
+ * ```tsx
+ * <Game width={800} height={600} backgroundColor={0x1a1a2e}>
+ *   <sprite texture="/assets/player.png" x={100} y={200} />
+ * </Game>
+ * ```
+ */
+export function Game(props: GameProps): any {
+  const [state, setState] = createSignal<GameState | null>(null);
+  let containerEl: HTMLDivElement | undefined;
+  let disposeRenderer: (() => void) | undefined;
+
+  // Create container div for Phaser canvas
+  if (typeof document !== "undefined") {
+    containerEl = document.createElement("div");
+    containerEl.style.display = "inline-block";
+
+    if (props.parent) {
+      const parentEl =
+        typeof props.parent === "string"
+          ? document.getElementById(props.parent)
+          : props.parent;
+      parentEl?.appendChild(containerEl);
+    }
+  }
+
+  // Boot Phaser
+  if (containerEl) {
+    bootPhaser(containerEl, props).then((gameState) => {
+      setState(gameState);
+
+      // Push the default scene onto the stack
+      pushScene(gameState.scene);
+
+      // Create a root container in the scene for the renderer
+      const rootContainer = gameState.scene.add.container(0, 0);
+
+      // Render children via the universal renderer
+      disposeRenderer = render(
+        () => props.children,
+        rootContainer
+      );
+    });
+  }
+
+  onCleanup(() => {
+    const s = untrack(state);
+    if (disposeRenderer) disposeRenderer();
+    if (s) {
+      popScene();
+      s.game.destroy(true);
+    }
+    if (containerEl && containerEl.parentNode) {
+      containerEl.parentNode.removeChild(containerEl);
+    }
+  });
+
+  // Return the container element (for DOM renderer integration)
+  // When used standalone, the user can mount this into the DOM
+  return containerEl ?? null;
+}
+
+/**
+ * Programmatic Game creation for non-JSX usage.
+ * Returns { element, destroy } where element is the DOM container.
+ */
+export function createGame(
+  props: GameProps & { onReady?: (state: GameState) => void }
+): { element: HTMLDivElement; destroy: () => void } {
+  const el = document.createElement("div");
+  el.style.display = "inline-block";
+
+  let game: Phaser.Game | null = null;
+  let disposeRenderer: (() => void) | undefined;
+
+  bootPhaser(el, props).then((gameState) => {
+    game = gameState.game;
+    pushScene(gameState.scene);
+    const rootContainer = gameState.scene.add.container(0, 0);
+    disposeRenderer = render(() => props.children, rootContainer);
+    props.onReady?.(gameState);
+  });
+
+  return {
+    element: el,
+    destroy: () => {
+      if (disposeRenderer) disposeRenderer();
+      popScene();
+      game?.destroy(true);
+    },
+  };
+}

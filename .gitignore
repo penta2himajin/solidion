@@ -1,0 +1,14 @@
+node_modules/
+*.tsbuildinfo
+.vite/
+
+# Exclude build output at root, but keep pre-built example demos
+/dist/
+
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+Thumbs.db
+coverage/
