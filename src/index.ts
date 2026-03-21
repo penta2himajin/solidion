@@ -9,11 +9,17 @@ export type {
   TransformProps, DisplayProps, OriginProps, SizeProps,
   EventProps, InteractiveProps, RefProps, BaseProps,
   SpriteProps, ImageProps, TextProps, RectangleProps,
+  EllipseProps, ArcProps, StarProps, GraphicsProps,
   ContainerProps, NineSliceProps, ZoneProps,
 } from "./types";
 
-// Renderer
-export { render } from "./renderer";
+// Renderer primitives (for imperative usage and examples)
+export {
+  render, effect, memo, createComponent,
+  insert, setProp, mergeProps, spread,
+} from "./renderer";
+// Re-export createElement under its public name
+export { _createElement as createElement } from "./renderer";
 
 // Components
 export { Game, createGame, type GameProps } from "./components/Game";
@@ -47,6 +53,7 @@ export {
 
 // Core utilities (exposed for L4 advanced usage)
 export { addDelta, removeDelta, getMeta } from "./core/meta";
+export { isEventProp, resolveEventName } from "./core/events";
 export { parseTextureRef, ensureTexture, preloadAssets } from "./core/texture";
 export { pushScene, popScene, getCurrentScene } from "./core/scene-stack";
 export { composeProp, applyProp, reapplyProp, setPhaserProp } from "./core/props";

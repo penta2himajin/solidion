@@ -14,87 +14,11 @@
 
 import Phaser from "phaser";
 import { createRoot, createSignal, batch } from "solid-js";
-import { createRenderer } from "solid-js/universal";
-
-// Solidion core
+import { _createElement as createElement, insert, setProp, effect } from "solidion/renderer";
 import { getMeta } from "solidion/core/meta";
-import { isEventProp, resolveEventName } from "solidion/core/events";
-import { applyProp } from "solidion/core/props";
+import { pushScene } from "solidion/core/scene-stack";
 import { createFrameManager } from "solidion/core/frame";
 import { solidionFrameUpdate } from "solidion/core/sync";
-
-// ============================================================
-// Renderer (same pattern as breakout)
-// ============================================================
-
-let _scene: Phaser.Scene | null = null;
-
-interface TN { __tn: true; value: string; parent: any }
-function isTN(n: any): n is TN { return n?.__tn === true; }
-
-const FAC: Record<string, (s: Phaser.Scene) => Phaser.GameObjects.GameObject> = {
-  rectangle: (s) => new Phaser.GameObjects.Rectangle(s, 0, 0, 0, 0, 0xffffff),
-  text: (s) => new Phaser.GameObjects.Text(s, 0, 0, "", {}),
-  container: (s) => new Phaser.GameObjects.Container(s, 0, 0),
-};
-
-const { effect, createElement, insert, setProp } = createRenderer({
-  createElement(type: string) {
-    const f = FAC[type];
-    if (!f) throw new Error(`Unknown element: ${type}`);
-    const o = f(_scene!);
-    getMeta(o);
-    return o;
-  },
-  createTextNode(v: string) {
-    return { __tn: true, value: v, parent: null } as any;
-  },
-  replaceText(n: any, v: string) {
-    if (isTN(n)) { n.value = v; if (n.parent?.setText) n.parent.setText(v); }
-  },
-  setProperty(node: any, name: string, value: any) {
-    if (isTN(node) || !node) return;
-    if (name === "ref" || name === "children") return;
-    if (isEventProp(name)) {
-      const evt = resolveEventName(name);
-      if (!evt) return;
-      const m = getMeta(node);
-      const prev = m.handlers.get(name);
-      if (prev) node.off(evt, prev);
-      if (value) {
-        if (!node.input) node.setInteractive();
-        node.on(evt, value);
-        m.handlers.set(name, value);
-      }
-      return;
-    }
-    if (name === "texture" && typeof node.setTexture === "function") {
-      node.setTexture(value);
-      return;
-    }
-    applyProp(node, name, value);
-  },
-  insertNode(parent: any, node: any) {
-    if (isTN(node)) { node.parent = parent; return; }
-    if (!parent || !node) return;
-    getMeta(parent).children.push(node);
-    if (parent instanceof Phaser.GameObjects.Container) parent.add(node);
-    else node.scene?.sys.displayList?.add(node);
-  },
-  removeNode(parent: any, node: any) {
-    if (isTN(node)) { node.parent = null; return; }
-    if (!parent || !node) return;
-    const m = getMeta(parent);
-    const i = m.children.indexOf(node);
-    if (i >= 0) m.children.splice(i, 1);
-    if (parent instanceof Phaser.GameObjects.Container) parent.remove(node);
-    node.destroy();
-  },
-  getParentNode(n: any) { return isTN(n) ? n.parent : n?.parentContainer ?? null; },
-  getFirstChild(n: any) { return isTN(n) ? null : getMeta(n).children[0] ?? null; },
-  getNextSibling() { return null; },
-  isTextNode: isTN,
-});
 
 // ============================================================
 // Constants
@@ -216,7 +140,7 @@ class FloppyHeadsScene extends Phaser.Scene {
   constructor() { super("floppy-heads"); }
 
   create() {
-    _scene = this;
+    pushScene(this);
     const fm = createFrameManager();
     const root = this.add.container(0, 0);
     getMeta(root);

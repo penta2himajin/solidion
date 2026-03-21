@@ -122,6 +122,44 @@ export interface ZoneProps extends TransformProps & SizeProps & EventProps & Int
   children?: SolidJSX.Element;
 }
 
+export interface EllipseProps extends BaseProps, RefProps<Phaser.GameObjects.Ellipse> {
+  fillColor?: number;
+  fillAlpha?: number;
+  strokeColor?: number;
+  strokeAlpha?: number;
+  lineWidth?: number;
+  children?: SolidJSX.Element;
+}
+
+export interface ArcProps extends BaseProps, RefProps<Phaser.GameObjects.Arc> {
+  radius?: number;
+  startAngle?: number;
+  endAngle?: number;
+  anticlockwise?: boolean;
+  fillColor?: number;
+  fillAlpha?: number;
+  strokeColor?: number;
+  strokeAlpha?: number;
+  lineWidth?: number;
+  children?: SolidJSX.Element;
+}
+
+export interface StarProps extends BaseProps, RefProps<Phaser.GameObjects.Star> {
+  points?: number;
+  innerRadius?: number;
+  outerRadius?: number;
+  fillColor?: number;
+  fillAlpha?: number;
+  strokeColor?: number;
+  strokeAlpha?: number;
+  lineWidth?: number;
+  children?: SolidJSX.Element;
+}
+
+export interface GraphicsProps extends TransformProps & DisplayProps & EventProps & InteractiveProps & RefProps<Phaser.GameObjects.Graphics> {
+  children?: SolidJSX.Element;
+}
+
 // ---- JSX namespace declaration ----
 
 declare module "solid-js" {
@@ -131,6 +169,10 @@ declare module "solid-js" {
       image: ImageProps;
       text: TextProps;
       rectangle: RectangleProps;
+      ellipse: EllipseProps;
+      arc: ArcProps;
+      star: StarProps;
+      graphics: GraphicsProps;
       container: ContainerProps;
       nineslice: NineSliceProps;
       zone: ZoneProps;

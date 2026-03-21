@@ -37,7 +37,11 @@ const ELEMENT_FACTORIES: Record<
   image: (s) => new Phaser.GameObjects.Image(s, 0, 0, ""),
   container: (s) => new Phaser.GameObjects.Container(s, 0, 0),
   text: (s) => new Phaser.GameObjects.Text(s, 0, 0, "", {}),
-  rectangle: (s) => new Phaser.GameObjects.Rectangle(s, 0, 0, 0, 0),
+  rectangle: (s) => new Phaser.GameObjects.Rectangle(s, 0, 0, 0, 0, 0xffffff),
+  ellipse: (s) => new Phaser.GameObjects.Ellipse(s, 0, 0, 0, 0, 0xffffff),
+  arc: (s) => new Phaser.GameObjects.Arc(s, 0, 0, 0, 0, 360, false, 0xffffff),
+  star: (s) => new Phaser.GameObjects.Star(s, 0, 0, 5, 0, 0, 0xffffff),
+  graphics: (s) => new Phaser.GameObjects.Graphics(s),
   zone: (s) => new Phaser.GameObjects.Zone(s, 0, 0, 0, 0),
 };
 
@@ -179,8 +183,8 @@ function insertNode(
     scene.sys.displayList?.add(node);
   }
 
-  // Sync depth values based on insertion order
-  syncDepths(meta.children);
+  // Note: depth is NOT auto-synced here. Users set depth explicitly
+  // via setProp(node, "depth", n). Auto-syncing would override those values.
 }
 
 /**
