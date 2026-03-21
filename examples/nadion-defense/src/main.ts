@@ -16,7 +16,7 @@
 import Phaser from "phaser";
 import { createRoot, createSignal, createMemo, batch } from "solid-js";
 // Solidion renderer primitives
-import { _createElement as createElement, insert, setProp, effect } from "solidion/renderer";
+import { createElement, insert, setProp, effect } from "solidion/renderer";
 import { getMeta } from "solidion/core/meta";
 import { pushScene } from "solidion/core/scene-stack";
 import { createFrameManager } from "solidion/core/frame";

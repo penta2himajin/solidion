@@ -48,7 +48,7 @@ const ELEMENT_FACTORIES: Record<
 /**
  * Create a Phaser GameObject from a JSX tag name.
  */
-function createElement(type: string): Phaser.GameObjects.GameObject {
+function _createElement(type: string): Phaser.GameObjects.GameObject {
   const scene = getCurrentScene();
   if (!scene) {
     throw new Error(
@@ -73,7 +73,7 @@ function createElement(type: string): Phaser.GameObjects.GameObject {
 /**
  * Create a lightweight text node.
  */
-function createTextNode(value: string): SolidionTextNode {
+function _createTextNode(value: string): SolidionTextNode {
   return {
     __solidion_textNode: true,
     value,
@@ -146,7 +146,7 @@ function setProperty(node: any, name: string, value: any): void {
 /**
  * Insert a child node into a parent.
  */
-function insertNode(
+function _insertNode(
   parent: any,
   node: any,
   anchor?: any
@@ -306,19 +306,19 @@ export const {
   effect,
   memo,
   createComponent,
-  createElement: _createElement,
-  createTextNode: _createTextNode,
-  insertNode: _insertNode,
+  createElement,
+  createTextNode,
+  insertNode,
   insert,
   spread,
   setProp,
   mergeProps,
 } = createRenderer({
-  createElement,
-  createTextNode,
+  createElement: _createElement,
+  createTextNode: _createTextNode,
   replaceText,
   setProperty,
-  insertNode,
+  insertNode: _insertNode,
   removeNode,
   getParentNode,
   getFirstChild,

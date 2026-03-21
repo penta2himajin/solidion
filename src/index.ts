@@ -16,10 +16,9 @@ export type {
 // Renderer primitives (for imperative usage and examples)
 export {
   render, effect, memo, createComponent,
+  createElement, createTextNode, insertNode,
   insert, setProp, mergeProps, spread,
 } from "./renderer";
-// Re-export createElement under its public name
-export { _createElement as createElement } from "./renderer";
 
 // Components
 export { Game, createGame, type GameProps } from "./components/Game";
