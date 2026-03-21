@@ -1,66 +1,51 @@
 /**
- * Phase 1-1: JSX compilation test
+ * Phase 1-2 + 1-4: <Game> component + JSX minimal example
  *
- * Verify that vite-plugin-solid with generate:"universal" and
- * moduleName:"solidion/renderer" correctly transforms JSX into
- * solidion/renderer's createElement/insert/setProp calls.
+ * Verify that:
+ * 1. <Game> boots Phaser, creates canvas, and renders children via JSX
+ * 2. Static props bind correctly
+ * 3. Dynamic props (signals) update reactively
+ * 4. Event handlers work (onClick)
+ * 5. <Show> control flow works
  */
 
-import Phaser from "phaser";
-import { createSignal } from "solid-js";
-import { pushScene } from "solidion/core/scene-stack";
-import { createFrameManager } from "solidion/core/frame";
-import { solidionFrameUpdate } from "solidion/core/sync";
-import { getMeta } from "solidion/core/meta";
+import { createSignal, Show } from "solid-js";
+import { Game } from "solidion/components/Game";
 
-// Minimal JSX component — the goal is to see the compiled output
-function ClickCounter() {
+function App() {
   const [count, setCount] = createSignal(0);
+  const isHigh = () => count() >= 5;
+
   return (
-    <container x={200} y={150}>
-      <rectangle
-        x={0} y={0} width={80} height={80}
+    <Game width={400} height={300} backgroundColor={0x1a1a2e} parent="game-container">
+      {/* Static rectangle */}
+      <rectangle x={200} y={100} width={80} height={80}
         fillColor={0x7fdbca}
         onClick={() => setCount(c => c + 1)}
       />
-      <text
-        x={0} y={60}
-        text={`Clicks: ${count()}`}
-        fontSize={20}
-        color="#ffffff"
-        origin={0.5}
+
+      {/* Dynamic text — updates reactively */}
+      <text x={200} y={200} text={`Clicks: ${count()}`}
+        fontSize={20} color="#ffffff" origin={0.5}
       />
-    </container>
+
+      {/* Conditional rendering with <Show> */}
+      <Show when={isHigh()}>
+        <text x={200} y={250} text="5+ clicks!"
+          fontSize={14} color="#ffcc00" origin={0.5}
+        />
+      </Show>
+    </Game>
   );
 }
 
-// Boot Phaser and render the component
-class TestScene extends Phaser.Scene {
-  constructor() { super("test"); }
+// Mount into DOM — since <Game> returns a DOM element,
+// we need to handle the mounting ourselves
+import { createRoot } from "solid-js";
 
-  create() {
-    pushScene(this);
-    const fm = createFrameManager();
-    const root = this.add.container(0, 0);
-    getMeta(root);
-
-    this.events.on("update", (time: number, delta: number) => {
-      solidionFrameUpdate(fm, time, delta);
-    });
-
-    // This is where JSX rendering would happen
-    // For now, just log to verify compilation works
-    console.log("Scene created, JSX component:", ClickCounter);
-    console.log("Component output:", ClickCounter());
+createRoot(() => {
+  const el = App();
+  if (el instanceof HTMLElement) {
+    document.getElementById("game-container")?.appendChild(el);
   }
-}
-
-new Phaser.Game({
-  type: Phaser.AUTO,
-  width: 400,
-  height: 300,
-  parent: "game-container",
-  backgroundColor: "#1a1a2e",
-  scene: TestScene,
-  banner: false,
 });
