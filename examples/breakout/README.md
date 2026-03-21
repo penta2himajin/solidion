@@ -11,12 +11,6 @@ npx serve dist
 # → http://localhost:3000
 ```
 
-Or with Python:
-
-```bash
-cd dist && python3 -m http.server 3000
-```
-
 ## Controls
 
 - **Mouse** — move paddle
