@@ -11,6 +11,12 @@ export default defineConfig({
         inline: ["solid-js"],
       },
     },
+    coverage: {
+      provider: "v8",
+      include: ["src/**/*.ts"],
+      exclude: ["src/types.ts", "src/types.generated.ts"],
+      reporter: ["text", "text-summary"],
+    },
   },
   resolve: {
     conditions: ["browser", "development"],
