@@ -23,7 +23,7 @@ import { useTween } from "solidion/hooks/useTween";
 import { useSequence } from "solidion/hooks/useSequence";
 import { useFollow } from "solidion/hooks/useFollow";
 import { useVelocity } from "solidion/hooks/useVelocity";
-import { OscillateBehavior } from "solidion/behaviors";
+import { OscillateBehavior, SpringBehavior } from "solidion/behaviors";
 import * as debug from "solidion/debug";
 import Phaser from "phaser";
 
@@ -288,13 +288,27 @@ function Jellyfish(props: { baseX: number; baseY: number }) {
       <ellipse x={jx()} y={jy()} width={bellW()} height={bellH()}
         fillColor={0xcc88ff} origin={0.5} depth={8}
         alpha={startled() ? 0.4 : 0.6} onClick={startle} />
-      {/* Tentacles — attached to bottom of bell */}
-      <rectangle x={jx() - 6} y={jy() + bellH() / 2 + 8} width={2} height={16}
-        fillColor={0xbb77ee} origin={0.5} depth={7} alpha={0.4} />
-      <rectangle x={jx()} y={jy() + bellH() / 2 + 10} width={2} height={20}
-        fillColor={0xbb77ee} origin={0.5} depth={7} alpha={0.4} />
-      <rectangle x={jx() + 6} y={jy() + bellH() / 2 + 8} width={2} height={16}
-        fillColor={0xbb77ee} origin={0.5} depth={7} alpha={0.4} />
+      {/* Tentacles — attached to bottom of bell, with L1c OscillateBehavior sway */}
+      {(() => {
+        let t1: any, t2: any, t3: any;
+        return (
+          <>
+            <rectangle x={jx() - 6} y={jy() + bellH() / 2 + 2} width={2} height={16}
+              fillColor={0xbb77ee} origin={0.5} depth={7} alpha={0.4}
+              ref={(el: any) => { t1 = el; }} />
+            <rectangle x={jx()} y={jy() + bellH() / 2 + 3} width={2} height={20}
+              fillColor={0xbb77ee} origin={0.5} depth={7} alpha={0.4}
+              ref={(el: any) => { t2 = el; }} />
+            <rectangle x={jx() + 6} y={jy() + bellH() / 2 + 2} width={2} height={16}
+              fillColor={0xbb77ee} origin={0.5} depth={7} alpha={0.4}
+              ref={(el: any) => { t3 = el; }} />
+            {/* L1c: OscillateBehavior makes each tentacle sway independently */}
+            {t1 && <OscillateBehavior parent={t1} amplitude={{ x: 2 }} frequency={0.6} phase={0} />}
+            {t2 && <OscillateBehavior parent={t2} amplitude={{ x: 3 }} frequency={0.5} phase={1.2} />}
+            {t3 && <OscillateBehavior parent={t3} amplitude={{ x: 2 }} frequency={0.7} phase={2.4} />}
+          </>
+        );
+      })()}
     </>
   );
 }
@@ -465,7 +479,7 @@ function App() {
       const f = fish[i];
       if (!f.active) continue;
       f.tick(delta);
-      f.hunger += delta * 0.01;
+      f.hunger += delta * 0.003;
 
       // Nearest food
       let ni = -1, nd = Infinity;
@@ -589,26 +603,39 @@ function App() {
           fontSize={9} fontFamily="monospace" color="#334455" originX={0} originY={0.5} depth={20} />
       </Show>
 
-      {/* Stats Panel */}
-      <Show when={showPanel() && selIdx() >= 0}>
-        <rectangle x={W - 80} y={H / 2} width={140} height={180}
-          fillColor={0x112233} origin={0.5} depth={30} alpha={0.9} />
-        <text x={W - 80} y={H / 2 - 60} text={`Fish #${sel()?.id ?? ""}`}
-          fontSize={14} fontFamily="monospace" color="#88bbdd" origin={0.5} depth={31} />
-        <text x={W - 80} y={H / 2 - 30} text={`State: ${sel()?.state ?? ""}`}
-          fontSize={11} fontFamily="monospace" color="#668899" origin={0.5} depth={31} />
-        <text x={W - 80} y={H / 2 - 10} text={`Hunger: ${Math.floor(sel()?.hunger ?? 0)}`}
-          fontSize={11} fontFamily="monospace" color="#668899" origin={0.5} depth={31} />
-        <rectangle x={W - 80} y={H / 2 + 30} width={80} height={24}
-          fillColor={0x884444} origin={0.5} depth={31} onClick={releaseFish} />
-        <text x={W - 80} y={H / 2 + 30} text="Release"
-          fontSize={11} fontFamily="monospace" color="#ffaaaa" origin={0.5} depth={32} />
-        <rectangle x={W - 80} y={H / 2 + 60} width={80} height={24}
-          fillColor={0x444466} origin={0.5} depth={31}
-          onClick={() => { setSelIdx(-1); setShowPanel(false); }} />
-        <text x={W - 80} y={H / 2 + 60} text="Close"
-          fontSize={11} fontFamily="monospace" color="#aaaacc" origin={0.5} depth={32} />
-      </Show>
+      {/* Stats Panel — slides in/out via useSpring + SpringBehavior on title */}
+      {(() => {
+        const panelTarget = () => ({ x: showPanel() && selIdx() >= 0 ? W - 80 : W + 100, y: H / 2 });
+        const panelPos = useSpring({ target: panelTarget, stiffness: 80, damping: 14, initial: { x: W + 100, y: H / 2 } });
+        const px = () => panelPos().x;
+        const pv = () => px() < W; // visible when on-screen
+        let titleRef: any = null;
+        return (
+          <>
+            <rectangle x={px()} y={H / 2} width={140} height={180}
+              fillColor={0x112233} origin={0.5} depth={30} alpha={0.9} visible={pv()} />
+            <text x={px()} y={H / 2 - 60} text={`Fish #${sel()?.id ?? ""}`}
+              fontSize={14} fontFamily="monospace" color="#88bbdd" origin={0.5} depth={31}
+              visible={pv()} ref={(el: any) => { titleRef = el; }} />
+            {/* L1c: SpringBehavior adds subtle bouncy sway to the title text */}
+            {titleRef && <SpringBehavior parent={titleRef}
+              target={() => ({ x: 0, y: 0 })} stiffness={30} damping={3} />}
+            <text x={px()} y={H / 2 - 30} text={`State: ${sel()?.state ?? ""}`}
+              fontSize={11} fontFamily="monospace" color="#668899" origin={0.5} depth={31} visible={pv()} />
+            <text x={px()} y={H / 2 - 10} text={`Hunger: ${Math.floor(sel()?.hunger ?? 0)}`}
+              fontSize={11} fontFamily="monospace" color="#668899" origin={0.5} depth={31} visible={pv()} />
+            <rectangle x={px()} y={H / 2 + 30} width={80} height={24}
+              fillColor={0x884444} origin={0.5} depth={31} onClick={releaseFish} visible={pv()} />
+            <text x={px()} y={H / 2 + 30} text="Release"
+              fontSize={11} fontFamily="monospace" color="#ffaaaa" origin={0.5} depth={32} visible={pv()} />
+            <rectangle x={px()} y={H / 2 + 60} width={80} height={24}
+              fillColor={0x444466} origin={0.5} depth={31}
+              onClick={() => { setSelIdx(-1); setShowPanel(false); }} visible={pv()} />
+            <text x={px()} y={H / 2 + 60} text="Close"
+              fontSize={11} fontFamily="monospace" color="#aaaacc" origin={0.5} depth={32} visible={pv()} />
+          </>
+        );
+      })()}
 
           </Preload>
         </Scene>
