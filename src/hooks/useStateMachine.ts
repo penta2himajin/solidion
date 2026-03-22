@@ -17,9 +17,14 @@ export interface StateMachineConfig<S extends string> {
    * - "frame" (default): call tick(delta) manually each frame via GameLoop.
    *   Works at L0. Durations are in milliseconds.
    * - "scene": uses Phaser's scene.time.delayedCall for automatic timers.
-   *   Requires useScene() (L4). Integrates with Phaser's pause/timeScale.
+   *   Requires `scene` to be provided. Integrates with Phaser's pause/timeScale.
    */
   timerMode?: "frame" | "scene";
+  /**
+   * Phaser Scene instance. Required when timerMode is "scene".
+   * Pass the result of useScene() or a direct scene reference.
+   */
+  scene?: Phaser.Scene;
 }
 
 export interface StateMachineReturn<S extends string> {
@@ -53,9 +58,11 @@ export interface StateMachineReturn<S extends string> {
  *
  * Usage (scene mode — L4):
  * ```tsx
+ * const scene = useScene();
  * const machine = useStateMachine({
  *   initial: "idle",
  *   timerMode: "scene",
+ *   scene,
  *   states: { idle: { duration: 1000, onComplete: "run" }, run: { ... } }
  * });
  * // No tick() needed — timers managed by Phaser
@@ -74,18 +81,13 @@ export function useStateMachine<S extends string>(
 
   // Timer state for scene mode
   let sceneTimer: any = null; // Phaser.Time.TimerEvent
-  let scene: any = null; // Phaser.Scene (only resolved in scene mode)
+  const scene = config.scene ?? null;
 
-  if (mode === "scene") {
-    try {
-      // Dynamically import to avoid L4 dependency when using frame mode
-      const { useScene } = require("../contexts");
-      scene = useScene();
-    } catch {
-      throw new Error(
-        'useStateMachine: timerMode "scene" requires being inside a <Game> component with scene context.'
-      );
-    }
+  if (mode === "scene" && !scene) {
+    throw new Error(
+      'useStateMachine: timerMode "scene" requires a `scene` property in the config. ' +
+        "Pass useScene() or a direct Phaser.Scene reference."
+    );
   }
 
   const currentConfig = (): StateConfig<S> => config.states[state()];

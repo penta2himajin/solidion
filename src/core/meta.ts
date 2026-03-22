@@ -1,9 +1,9 @@
 /**
- * SolidionMeta: Lightweight metadata attached to Phaser GameObjects.
- * Replaces the need for a virtual node tree.
+ * SolidionMeta: Lightweight metadata for Phaser GameObjects.
+ * Stored in a WeakMap — no property pollution on Phaser objects.
  */
 
-const META_KEY = "__solidion";
+const metaMap = new WeakMap<object, SolidionMeta>();
 
 export interface SolidionMeta {
   /** Child GameObjects in insertion order */
@@ -32,18 +32,20 @@ export function createMeta(): SolidionMeta {
 }
 
 export function getMeta(node: any): SolidionMeta {
-  if (!node[META_KEY]) {
-    node[META_KEY] = createMeta();
+  let meta = metaMap.get(node);
+  if (!meta) {
+    meta = createMeta();
+    metaMap.set(node, meta);
   }
-  return node[META_KEY] as SolidionMeta;
+  return meta;
 }
 
 export function hasMeta(node: any): boolean {
-  return !!node[META_KEY];
+  return metaMap.has(node);
 }
 
 export function deleteMeta(node: any): void {
-  delete node[META_KEY];
+  metaMap.delete(node);
 }
 
 /**
