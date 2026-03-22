@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:browser": "vitest run --config vitest.browser.config.ts"
   },
   "keywords": [],
   "author": "",
@@ -16,7 +17,11 @@
   },
   "devDependencies": {
     "@babel/core": "^7.29.0",
+    "@vitest/browser": "^4.1.0",
+    "@vitest/browser-playwright": "^4.1.0",
     "babel-preset-solid": "^1.9.10",
+    "jsdom": "^29.0.1",
+    "playwright": "^1.58.2",
     "typescript": "^5.9.3",
     "vite": "^8.0.1",
     "vite-plugin-solid": "^2.11.11",
