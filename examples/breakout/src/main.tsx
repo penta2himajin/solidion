@@ -1,19 +1,22 @@
 /**
- * Solidion Example: Breakout (JSX version)
+ * Solidion Example: Breakout (JSX version, L0 only)
  *
- * A block breaker game demonstrating:
+ * A block breaker game written entirely at L0:
  *  - JSX declarative rendering of Phaser GameObjects
  *  - Reactive signals for all game state
- *  - <Show> for conditional overlay display
- *  - <Index> for reactive block grid
- *  - Frame callback (L3) for physics
+ *  - Solidion <Show> for conditional overlay
+ *  - Solidion <Index> for block grid
+ *  - <GameLoop> for physics (no useFrame import)
+ *  - <Game onPointerMove/onPointerDown> for input (no useScene import)
+ *
+ * No L3 (useFrame) or L4 (useScene) imports needed.
  */
 
-import { createSignal, createMemo, batch } from "solid-js";
+import { createSignal, createMemo, batch, createRoot } from "solid-js";
 import { Game } from "solidion/components/Game";
+import { GameLoop } from "solidion/components/GameLoop";
 import { Show } from "solidion/components/Show";
-import { useScene } from "solidion/contexts";
-import { useFrame } from "solidion/hooks/useFrame";
+import { Index } from "solidion/components/For";
 import Phaser from "phaser";
 
 // ============================================================
@@ -36,14 +39,6 @@ const POINTS = [60, 50, 40, 30, 20, 10];
 // ============================================================
 
 function App() {
-  return (
-    <Game width={W} height={H} backgroundColor={0x0f1729} parent="game-container">
-      <BreakoutGame />
-    </Game>
-  );
-}
-
-function BreakoutGame() {
   // ── State ──
   const [score, setScore] = createSignal(0);
   const [lives, setLives] = createSignal(3);
@@ -76,7 +71,7 @@ function BreakoutGame() {
     });
   };
 
-  // ── Overlay messages ──
+  // ── Overlay ──
   const overlayMsg = () => {
     const p = phase();
     const msgs: Record<string, [string, string, string]> = {
@@ -88,26 +83,21 @@ function BreakoutGame() {
     return msgs[p];
   };
 
-  // ── Input (L4: direct Phaser access) ──
-  // These use Phaser's scene input directly since they're scene-level events,
-  // not per-object events that JSX onClick handles.
-  const scene = useScene();
-  if (scene) {
-    scene.input.on("pointermove", (ptr: Phaser.Input.Pointer) => {
-      const px = Phaser.Math.Clamp(ptr.x, PADDLE_W / 2 + 4, W - PADDLE_W / 2 - 4);
-      setPadX(px);
-      if (phase() === "ready" || phase() === "miss") setBx(px);
-    });
+  // ── Input handlers (passed to <Game> props) ──
+  const handlePointerMove = (ptr: Phaser.Input.Pointer) => {
+    const px = Phaser.Math.Clamp(ptr.x, PADDLE_W / 2 + 4, W - PADDLE_W / 2 - 4);
+    setPadX(px);
+    if (phase() === "ready" || phase() === "miss") setBx(px);
+  };
 
-    scene.input.on("pointerdown", () => {
-      const p = phase();
-      if (p === "ready" || p === "miss") launch();
-      else if (p === "over" || p === "win") restart();
-    });
-  }
+  const handlePointerDown = () => {
+    const p = phase();
+    if (p === "ready" || p === "miss") launch();
+    else if (p === "over" || p === "win") restart();
+  };
 
-  // ── Physics (L3: frame callback) ──
-  useFrame((_, delta) => {
+  // ── Physics (passed to <GameLoop>) ──
+  const handleUpdate = (_: number, delta: number) => {
     if (phase() !== "play") return;
     const dt = Math.min(delta / 1000, 0.033);
     let x = bx() + vx * dt;
@@ -179,13 +169,17 @@ function BreakoutGame() {
       return;
     }
 
-    // Commit position
     batch(() => { setBx(x); setBy(y); });
-  });
+  };
 
-  // ── JSX Render ──
+  // ── Render ──
   return (
-    <>
+    <Game width={W} height={H} backgroundColor={0x0f1729} parent="game-container"
+      onPointerMove={handlePointerMove}
+      onPointerDown={handlePointerDown}
+    >
+      <GameLoop onUpdate={handleUpdate} />
+
       {/* Background + walls */}
       <rectangle x={W / 2} y={H / 2} width={W} height={H} fillColor={0x0f1729} origin={0.5} depth={0} />
       <rectangle x={W / 2} y={0} width={W} height={4} fillColor={0x1e3a5f} origin={0.5} depth={1} />
@@ -193,19 +187,21 @@ function BreakoutGame() {
       <rectangle x={W} y={H / 2} width={4} height={H} fillColor={0x1e3a5f} origin={0.5} depth={1} />
 
       {/* Blocks */}
-      {blocks.map(([isAlive], idx) => {
-        const r = Math.floor(idx / COLS);
-        const c = idx % COLS;
-        const bkx = BX0 + c * (BW + BPAD) + BW / 2;
-        const bky = BY0 + r * (BH + BPAD) + BH / 2;
-        return (
-          <rectangle
-            x={bkx} y={bky} width={BW} height={BH}
-            fillColor={COLORS[r]} origin={0.5} depth={2}
-            visible={isAlive()}
-          />
-        );
-      })}
+      <Index each={blocks}>
+        {([isAlive], idx) => {
+          const r = Math.floor(idx / COLS);
+          const c = idx % COLS;
+          const bkx = BX0 + c * (BW + BPAD) + BW / 2;
+          const bky = BY0 + r * (BH + BPAD) + BH / 2;
+          return (
+            <rectangle
+              x={bkx} y={bky} width={BW} height={BH}
+              fillColor={COLORS[r]} origin={0.5} depth={2}
+              visible={isAlive()}
+            />
+          );
+        }}
+      </Index>
 
       {/* Paddle */}
       <rectangle x={padX()} y={PADDLE_Y} width={PADDLE_W} height={PADDLE_H}
@@ -228,7 +224,7 @@ function BreakoutGame() {
         originX={1} originY={0.5} depth={5}
       />
 
-      {/* Overlay — visible when not playing */}
+      {/* Overlay */}
       <Show when={phase() !== "play"}>
         <text x={W / 2} y={H / 2}
           text={overlayMsg() ? overlayMsg()![0] : ""}
@@ -242,15 +238,13 @@ function BreakoutGame() {
           origin={0.5} depth={10}
         />
       </Show>
-    </>
+    </Game>
   );
 }
 
 // ============================================================
 // Mount
 // ============================================================
-
-import { createRoot } from "solid-js";
 
 createRoot(() => {
   const el = App();

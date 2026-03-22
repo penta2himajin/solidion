@@ -33,6 +33,10 @@ export interface GameProps {
   config?: Partial<Phaser.Types.Core.GameConfig>;
   /** Phaser canvas parent element. If not provided, Game creates one. */
   parent?: HTMLElement | string;
+  /** Scene-level input events (L0 — no useScene needed) */
+  onPointerMove?: (pointer: Phaser.Input.Pointer) => void;
+  onPointerDown?: (pointer: Phaser.Input.Pointer) => void;
+  onPointerUp?: (pointer: Phaser.Input.Pointer) => void;
   children?: JSX.Element;
 }
 
@@ -131,6 +135,18 @@ export function Game(props: GameProps): any {
 
       // Push the default scene onto the stack
       pushScene(gameState.scene);
+
+      // Wire scene-level input events (L0)
+      const sceneInput = gameState.scene.input;
+      if (props.onPointerMove) {
+        sceneInput.on("pointermove", props.onPointerMove);
+      }
+      if (props.onPointerDown) {
+        sceneInput.on("pointerdown", props.onPointerDown);
+      }
+      if (props.onPointerUp) {
+        sceneInput.on("pointerup", props.onPointerUp);
+      }
 
       // Create a root container in the scene for the renderer
       const rootContainer = gameState.scene.add.container(0, 0);

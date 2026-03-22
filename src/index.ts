@@ -25,6 +25,7 @@ export { Game, createGame, type GameProps } from "./components/Game";
 export { Scene, type SceneProps } from "./components/Scene";
 export { Preload, usePreload, type PreloadProps, type AssetSpec } from "./components/Preload";
 export { Overlay, type OverlayProps } from "./components/Overlay";
+export { GameLoop, type GameLoopProps } from "./components/GameLoop";
 
 // Control flow (Solidion versions — compatible with universal renderer)
 export { Show, type ShowProps } from "./components/Show";
