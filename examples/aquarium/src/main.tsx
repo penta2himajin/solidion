@@ -18,6 +18,7 @@ import { Preload } from "solidion/components/Preload";
 import { useStateMachine } from "solidion/hooks/useStateMachine";
 import { useSpring } from "solidion/hooks/useSpring";
 import { useOscillation } from "solidion/hooks/useOscillation";
+import { useTween } from "solidion/hooks/useTween";
 import Phaser from "phaser";
 
 const ASSETS = [
@@ -104,6 +105,15 @@ function Fish(props: { slot: number; onSelect: (s: number) => void }) {
   const spring = useSpring({ target, stiffness: 15, damping: 8, initial: { x: ix, y: iy } });
   const osc = useOscillation({ amplitude: { y: 3 }, frequency: 0.5, phase: i * 1.7 });
 
+  // Pop-in animation when fish is activated
+  const popIn = useTween({
+    from: { scale: 0 },
+    to: { scale: 1 },
+    duration: 400,
+    ease: "Back.easeOut",
+    playing: () => active(),
+  });
+
   const machine = useStateMachine<"idle" | "swim" | "eat" | "sleep">({
     initial: "idle",
     states: {
@@ -159,7 +169,7 @@ function Fish(props: { slot: number; onSelect: (s: number) => void }) {
     fish[i].y = y;
     return y;
   };
-  const s = () => sz();
+  const s = () => sz() * popIn().scale;
 
   return (
     <Show when={active()}>
