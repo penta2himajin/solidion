@@ -22,6 +22,7 @@ import { useOscillation } from "solidion/hooks/useOscillation";
 import { useTween } from "solidion/hooks/useTween";
 import { useSequence } from "solidion/hooks/useSequence";
 import { useFollow } from "solidion/hooks/useFollow";
+import { useVelocity } from "solidion/hooks/useVelocity";
 import * as debug from "solidion/debug";
 import Phaser from "phaser";
 
@@ -308,81 +309,75 @@ function Seaweed(props: { x: number; height: number; index: number }) {
 }
 
 // ============================================================
-// Bubble Component (useOscillation for wobble)
-// Note: useVelocity not used here because it lacks reset/reactivate API
-// needed for object pooling. Velocity is managed manually.
-// This gap is documented for future useVelocity improvements.
+// Bubble Component (useVelocity for rising + useOscillation for wobble)
 // ============================================================
 
 function Bubble(props: { slot: number }) {
   const i = props.slot;
   const [active, setActive] = createSignal(false);
-  const [px, setPx] = createSignal(0);
-  const [py, setPy] = createSignal(FLOOR_Y);
   const [dia, setDia] = createSignal(4);
 
   const wobble = useOscillation({
     amplitude: { x: 3 }, frequency: 1.5 + Math.random() * 0.5, phase: i * 2.1,
   });
 
-  let _bx = 0, _y = FLOOR_Y, _spd = 0.7, _on = false;
+  const vel = useVelocity({ bounds: { y: [SURFACE_Y, FLOOR_Y] } });
 
   bubbles[i].ctrl = {
     activate: (x: number) => {
-      _bx = x; _y = FLOOR_Y - 10; _spd = 0.5 + Math.random() * 1.0; _on = true;
+      vel.reset({ x, y: FLOOR_Y - 10 }, { x: 0, y: -(30 + Math.random() * 60) });
+      vel.setActive(true);
       bubbles[i].active = true;
-      batch(() => { setPx(x); setPy(_y); setDia(3 + Math.random() * 4); setActive(true); });
+      batch(() => { setDia(3 + Math.random() * 4); setActive(true); });
     },
-    deactivate: () => { _on = false; bubbles[i].active = false; setActive(false); },
+    deactivate: () => { vel.setActive(false); bubbles[i].active = false; setActive(false); },
   };
 
   bubbles[i].update = () => {
-    if (!_on) return;
-    _y -= _spd;
-    if (_y < SURFACE_Y) { bubbles[i].ctrl.deactivate(); }
-    else { setPx(_bx + wobble().x); setPy(_y); }
+    if (!bubbles[i].active) return;
+    // Deactivate when reaching surface
+    if (vel.pos().y <= SURFACE_Y + 1) { bubbles[i].ctrl.deactivate(); }
   };
 
   return (
-    <ellipse x={px()} y={py()} width={dia()} height={dia()}
+    <ellipse x={vel.pos().x + wobble().x} y={vel.pos().y} width={dia()} height={dia()}
       fillColor={0x88ccee} origin={0.5} depth={4} alpha={0.6} visible={active()} />
   );
 }
 
 // ============================================================
-// Food Component (manual sinking velocity)
-// Same as Bubble: useVelocity lacks reset API for pool reactivation.
+// Food Component (useVelocity for sinking)
 // ============================================================
 
 function Food(props: { slot: number }) {
   const i = props.slot;
   const [active, setActive] = createSignal(false);
-  const [px, setPx] = createSignal(0);
-  const [py, setPy] = createSignal(0);
 
-  let _x = 0, _y = 0, _on = false;
+  const vel = useVelocity({ bounds: { y: [SURFACE_Y, FLOOR_Y] } });
 
-  const deactivate = () => { _on = false; food[i].active = false; setActive(false); };
+  const deactivate = () => { vel.setActive(false); food[i].active = false; setActive(false); };
 
   food[i].deactivate = deactivate;
   food[i].ctrl = {
     activate: (x: number, y: number) => {
-      _x = x; _y = y; _on = true;
+      vel.reset({ x, y }, { x: 0, y: 18 }); // sinking speed
+      vel.setActive(true);
       Object.assign(food[i], { active: true, x, y });
-      batch(() => { setPx(x); setPy(y); setActive(true); });
+      setActive(true);
     },
     deactivate,
   };
 
   food[i].update = () => {
-    if (!_on) return;
-    _y += 0.3;
-    if (_y > FLOOR_Y) { deactivate(); }
-    else { food[i].x = _x; food[i].y = _y; setPy(_y); }
+    if (!food[i].active) return;
+    // Update mutable position for fish AI proximity checks
+    food[i].x = vel.pos().x;
+    food[i].y = vel.pos().y;
+    if (vel.pos().y >= FLOOR_Y - 1) { deactivate(); }
   };
 
   return (
-    <ellipse x={px()} y={py()} width={6} height={6}
+    <ellipse x={vel.pos().x} y={vel.pos().y} width={6} height={6}
       fillColor={0xddaa44} origin={0.5} depth={3} visible={active()} />
   );
 }

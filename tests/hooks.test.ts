@@ -1617,10 +1617,10 @@ describe("useVelocity", () => {
     let pos!: () => { x: number; y: number };
 
     const { dispose } = runInRoot(() => {
-      pos = useVelocity({
+      const _v = useVelocity({
         initial: { x: 10, y: 20 },
         velocity: { x: 0, y: 0 },
-      });
+      }); pos = _v.pos; _v.setActive(true);
     });
 
     expect(pos()).toEqual({ x: 10, y: 20 });
@@ -1633,10 +1633,10 @@ describe("useVelocity", () => {
     let pos!: () => { x: number; y: number };
 
     const { dispose } = runInRoot(() => {
-      pos = useVelocity({
+      const _v = useVelocity({
         initial: { x: 0, y: 0 },
         velocity: { x: 100, y: 50 },
-      });
+      }); pos = _v.pos; _v.setActive(true);
     });
 
     for (let i = 0; i < 60; i++) {
@@ -1654,11 +1654,11 @@ describe("useVelocity", () => {
     let pos!: () => { x: number; y: number };
 
     const { dispose } = runInRoot(() => {
-      pos = useVelocity({
+      const _v = useVelocity({
         initial: { x: 0, y: 0 },
         velocity: { x: 0, y: 0 },
         acceleration: { x: 0, y: 500 },
-      });
+      }); pos = _v.pos; _v.setActive(true);
     });
 
     for (let i = 0; i < 60; i++) {
@@ -1676,10 +1676,10 @@ describe("useVelocity", () => {
     let pos!: () => { x: number; y: number };
 
     const { dispose } = runInRoot(() => {
-      pos = useVelocity({
+      const _v = useVelocity({
         initial: { x: 0, y: 0 },
         velocity: { x: 50, y: 0 },
-      });
+      }); pos = _v.pos; _v.setActive(true);
     });
 
     for (let i = 0; i < 60; i++) {
@@ -1696,12 +1696,12 @@ describe("useVelocity", () => {
     let pos!: () => { x: number; y: number };
 
     const { dispose } = runInRoot(() => {
-      pos = useVelocity({
+      const _v = useVelocity({
         initial: { x: 90, y: 0 },
         velocity: { x: 500, y: 0 },
         bounds: { x: [0, 100] },
         bounce: 0.8,
-      });
+      }); pos = _v.pos; _v.setActive(true);
     });
 
     mockFm.update(16, 16);
@@ -1715,12 +1715,12 @@ describe("useVelocity", () => {
     let pos!: () => { x: number; y: number };
 
     const { dispose } = runInRoot(() => {
-      pos = useVelocity({
+      const _v = useVelocity({
         initial: { x: 10, y: 0 },
         velocity: { x: -500, y: 0 },
         bounds: { x: [0, 100] },
         bounce: 0.5,
-      });
+      }); pos = _v.pos; _v.setActive(true);
     });
 
     mockFm.update(16, 16);
@@ -1734,12 +1734,12 @@ describe("useVelocity", () => {
     let pos!: () => { x: number; y: number };
 
     const { dispose } = runInRoot(() => {
-      pos = useVelocity({
+      const _v = useVelocity({
         initial: { x: 0, y: 90 },
         velocity: { x: 0, y: 500 },
         bounds: { y: [0, 100] },
         bounce: 0.5,
-      });
+      }); pos = _v.pos; _v.setActive(true);
     });
 
     mockFm.update(16, 16);
@@ -1753,12 +1753,12 @@ describe("useVelocity", () => {
     let pos!: () => { x: number; y: number };
 
     const { dispose } = runInRoot(() => {
-      pos = useVelocity({
+      const _v = useVelocity({
         initial: { x: 0, y: 10 },
         velocity: { x: 0, y: -500 },
         bounds: { y: [0, 100] },
         bounce: 0.5,
-      });
+      }); pos = _v.pos; _v.setActive(true);
     });
 
     mockFm.update(16, 16);
@@ -1772,11 +1772,11 @@ describe("useVelocity", () => {
     let pos!: () => { x: number; y: number };
 
     const { dispose } = runInRoot(() => {
-      pos = useVelocity({
+      const _v = useVelocity({
         initial: { x: 95, y: 0 },
         velocity: { x: 1000, y: 0 },
         bounds: { x: [0, 100] },
-      });
+      }); pos = _v.pos; _v.setActive(true);
     });
 
     mockFm.update(16, 16);
@@ -1793,10 +1793,10 @@ describe("useVelocity", () => {
     let pos!: () => { x: number; y: number };
 
     const { dispose } = runInRoot(() => {
-      pos = useVelocity({
+      const _v = useVelocity({
         initial: { x: 0, y: 0 },
         velocity: { x: 100, y: 0 },
-      });
+      }); pos = _v.pos; _v.setActive(true);
     });
 
     mockFm.update(0, 10000);
@@ -1806,15 +1806,73 @@ describe("useVelocity", () => {
     dispose();
   });
 
+  it("reset changes position and velocity", async () => {
+    const { useVelocity } = await import("../src/hooks/useVelocity");
+    let pos!: () => { x: number; y: number };
+    let vel!: any;
+
+    const { dispose } = runInRoot(() => {
+      vel = useVelocity({
+        initial: { x: 0, y: 0 },
+        velocity: { x: 100, y: 0 },
+      });
+      pos = vel.pos;
+      vel.setActive(true);
+    });
+
+    mockFm.update(0, 1000);
+    expect(pos().x).toBeGreaterThan(0);
+
+    // Reset to new position and velocity
+    vel.reset({ x: 500, y: 300 }, { x: -50, y: 0 });
+    expect(pos()).toEqual({ x: 500, y: 300 });
+
+    mockFm.update(1000, 1000);
+    expect(pos().x).toBeLessThan(500); // moving left
+
+    dispose();
+  });
+
+  it("setActive(false) pauses integration", async () => {
+    const { useVelocity } = await import("../src/hooks/useVelocity");
+    let pos!: () => { x: number; y: number };
+    let vel!: any;
+
+    const { dispose } = runInRoot(() => {
+      vel = useVelocity({
+        initial: { x: 0, y: 0 },
+        velocity: { x: 100, y: 0 },
+      });
+      pos = vel.pos;
+      vel.setActive(true);
+    });
+
+    mockFm.update(0, 1000);
+    const x1 = pos().x;
+    expect(x1).toBeGreaterThan(0);
+
+    // Pause
+    vel.setActive(false);
+    mockFm.update(1000, 1000);
+    expect(pos().x).toBe(x1); // no change
+
+    // Resume
+    vel.setActive(true);
+    mockFm.update(2000, 1000);
+    expect(pos().x).toBeGreaterThan(x1);
+
+    dispose();
+  });
+
   it("works without bounds", async () => {
     const { useVelocity } = await import("../src/hooks/useVelocity");
     let pos!: () => { x: number; y: number };
 
     const { dispose } = runInRoot(() => {
-      pos = useVelocity({
+      const _v = useVelocity({
         initial: { x: 0, y: 0 },
         velocity: { x: 100, y: -100 },
-      });
+      }); pos = _v.pos; _v.setActive(true);
     });
 
     for (let i = 0; i < 60; i++) {
@@ -1832,13 +1890,13 @@ describe("useVelocity", () => {
     let pos!: () => { x: number; y: number };
 
     const { dispose } = runInRoot(() => {
-      pos = useVelocity({
+      const _v = useVelocity({
         initial: { x: 50, y: 50 },
         velocity: { x: 200, y: -200 },
         acceleration: { x: -100, y: 100 },
         bounds: { x: [0, 100], y: [0, 100] },
         bounce: 0.7,
-      });
+      }); pos = _v.pos; _v.setActive(true);
     });
 
     // Simulate many frames
