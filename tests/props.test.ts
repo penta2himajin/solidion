@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { composeProp, applyProp, setPhaserProp } from "../src/core/props";
+import { composeProp, applyProp, reapplyProp, setPhaserProp } from "../src/core/props";
 import { addDelta, getMeta } from "../src/core/meta";
-import { MockSprite, MockText, MockRectangle, MockContainer } from "./mocks";
+import { MockSprite, MockText, MockRectangle, MockContainer, MockGameObject } from "./mocks";
 
 describe("Property Composition", () => {
   describe("composeProp", () => {
@@ -24,6 +24,40 @@ describe("Property Composition", () => {
     it("returns base when delta is 0 (no change)", () => {
       expect(composeProp("x", 100, 0)).toBe(100);
       expect(composeProp("scale", 1, 0)).toBe(1);
+    });
+
+    it("returns base when delta is undefined", () => {
+      expect(composeProp("x", 100, undefined as any)).toBe(100);
+    });
+
+    it("returns base for override properties even with non-zero delta", () => {
+      expect(composeProp("tint", 0xff0000, 5)).toBe(0xff0000);
+      expect(composeProp("visible", true, 1)).toBe(true);
+      expect(composeProp("texture", "foo", 1)).toBe("foo");
+      expect(composeProp("depth", 3, 1)).toBe(3);
+    });
+
+    it("defaults base to 0 for additive when base is nullish", () => {
+      expect(composeProp("x", undefined, 10)).toBe(10);
+      expect(composeProp("x", null, 10)).toBe(10);
+    });
+
+    it("defaults base to 1 for multiplicative when base is nullish", () => {
+      expect(composeProp("scale", undefined, 0.5)).toBe(1.5);
+      expect(composeProp("alpha", null, 0.5)).toBe(1.5);
+    });
+
+    it("handles rotation as additive", () => {
+      expect(composeProp("rotation", 1.0, 0.5)).toBe(1.5);
+    });
+
+    it("handles scaleX and scaleY as multiplicative", () => {
+      expect(composeProp("scaleX", 2, 0.5)).toBe(3.0); // 2 * (1 + 0.5)
+      expect(composeProp("scaleY", 2, -0.5)).toBe(1.0); // 2 * (1 + -0.5)
+    });
+
+    it("treats unknown properties as override", () => {
+      expect(composeProp("customProp", "hello", 5)).toBe("hello");
     });
   });
 });
@@ -81,6 +115,139 @@ describe("Property Application", () => {
       setPhaserProp(sprite as any, "depth", 10);
       expect(sprite.depth).toBe(10);
     });
+
+    it("sets originX and originY individually", () => {
+      const sprite = new MockSprite();
+      sprite.originX = 0.5;
+      sprite.originY = 0.5;
+      setPhaserProp(sprite as any, "originX", 0.0);
+      expect(sprite.originX).toBe(0.0);
+      expect(sprite.originY).toBe(0.5);
+
+      setPhaserProp(sprite as any, "originY", 1.0);
+      expect(sprite.originX).toBe(0.0);
+      expect(sprite.originY).toBe(1.0);
+    });
+
+    it("sets width/height via setSize when available", () => {
+      const rect = new MockRectangle();
+      rect.width = 10;
+      rect.height = 20;
+      setPhaserProp(rect as any, "width", 100);
+      expect(rect.width).toBe(100);
+      expect(rect.height).toBe(20);
+
+      setPhaserProp(rect as any, "height", 200);
+      expect(rect.width).toBe(100);
+      expect(rect.height).toBe(200);
+    });
+
+    it("sets width/height via direct assignment when no setSize", () => {
+      const obj = new MockGameObject();
+      obj.width = 10;
+      obj.height = 20;
+      setPhaserProp(obj as any, "width", 100);
+      expect(obj.width).toBe(100);
+      setPhaserProp(obj as any, "height", 200);
+      expect(obj.height).toBe(200);
+    });
+
+    it("sets fillColor and fillAlpha", () => {
+      const rect = new MockRectangle();
+      rect.fillColor = 0x000000;
+      rect.fillAlpha = 1;
+      setPhaserProp(rect as any, "fillColor", 0xff0000);
+      expect(rect.fillColor).toBe(0xff0000);
+      expect(rect.fillAlpha).toBe(1);
+
+      setPhaserProp(rect as any, "fillAlpha", 0.5);
+      expect(rect.fillAlpha).toBe(0.5);
+    });
+
+    it("sets strokeColor and lineWidth", () => {
+      const rect = new MockRectangle();
+      setPhaserProp(rect as any, "strokeColor", 0x00ff00);
+      expect(rect.strokeColor).toBe(0x00ff00);
+
+      setPhaserProp(rect as any, "lineWidth", 3);
+      expect(rect.lineWidth).toBe(3);
+    });
+
+    it("sets wordWrap", () => {
+      const text = new MockText();
+      setPhaserProp(text as any, "wordWrap", { width: 200, useAdvancedWrap: false });
+      expect(text.style.wordWrapWidth).toBe(200);
+    });
+
+    it("wordWrap does nothing for falsy value", () => {
+      const text = new MockText();
+      setPhaserProp(text as any, "wordWrap", null);
+      expect(text.style.wordWrapWidth).toBeUndefined();
+    });
+
+    it("sets animation via play", () => {
+      const sprite = new MockSprite();
+      setPhaserProp(sprite as any, "animation", "walk");
+      // play is called — MockSprite has play() which is a no-op
+    });
+
+    it("animation does nothing for falsy value", () => {
+      const sprite = new MockSprite();
+      setPhaserProp(sprite as any, "animation", null);
+      // Should not throw
+    });
+
+    it("sets interactive true/false/object", () => {
+      const sprite = new MockSprite();
+      setPhaserProp(sprite as any, "interactive", true);
+      expect(sprite.input).toEqual({ enabled: true });
+
+      setPhaserProp(sprite as any, "interactive", false);
+      expect(sprite.input).toBeNull();
+
+      setPhaserProp(sprite as any, "interactive", { draggable: true });
+      expect(sprite.input).toEqual({ enabled: true });
+    });
+
+    it("interactive false does nothing when input is already null", () => {
+      const sprite = new MockSprite();
+      sprite.input = null;
+      setPhaserProp(sprite as any, "interactive", false);
+      expect(sprite.input).toBeNull();
+    });
+
+    it("texture prop is a no-op (handled by texture system)", () => {
+      const sprite = new MockSprite();
+      setPhaserProp(sprite as any, "texture", "foo.png");
+      // Should not throw, texture key unchanged
+    });
+
+    it("ref and children are no-ops", () => {
+      const sprite = new MockSprite();
+      setPhaserProp(sprite as any, "ref", () => {});
+      setPhaserProp(sprite as any, "children", []);
+      // Should not throw
+    });
+
+    it("uses setter method when available (dynamic resolution)", () => {
+      const text = new MockText();
+      setPhaserProp(text as any, "text", "hello");
+      expect(text.text).toBe("hello");
+      // setText is the setter used
+    });
+
+    it("falls back to direct assignment when no setter exists", () => {
+      const obj = new MockGameObject();
+      (obj as any).customField = "old";
+      setPhaserProp(obj as any, "customField", "new");
+      expect((obj as any).customField).toBe("new");
+    });
+
+    it("does nothing for unknown property not on object", () => {
+      const obj = new MockGameObject();
+      setPhaserProp(obj as any, "nonExistentProp", 42);
+      expect((obj as any).nonExistentProp).toBeUndefined();
+    });
   });
 
   describe("applyProp with deltas", () => {
@@ -111,6 +278,34 @@ describe("Property Application", () => {
       // scale: 1 * (1 + 0.2) = 1.2
       expect(sprite.scaleX).toBe(1.2);
       expect(sprite.scaleY).toBe(1.2);
+    });
+  });
+
+  describe("reapplyProp", () => {
+    it("re-applies a stored base value with current deltas", () => {
+      const sprite = new MockSprite();
+      applyProp(sprite as any, "x", 100);
+      expect(sprite.x).toBe(100);
+
+      // Add a delta after initial apply
+      addDelta(sprite, "behavior-1", { x: 50 });
+      reapplyProp(sprite as any, "x");
+      expect(sprite.x).toBe(150); // 100 + 50
+    });
+
+    it("does nothing if base value was never set", () => {
+      const sprite = new MockSprite();
+      sprite.x = 999;
+      reapplyProp(sprite as any, "x");
+      // x should remain unchanged since no base was stored
+      expect(sprite.x).toBe(999);
+    });
+
+    it("re-applies with zero delta when no deltas exist", () => {
+      const sprite = new MockSprite();
+      applyProp(sprite as any, "x", 200);
+      reapplyProp(sprite as any, "x");
+      expect(sprite.x).toBe(200);
     });
   });
 });

@@ -28,6 +28,9 @@ export class MockGameObject {
 
   private listeners = new Map<string, Set<Function>>();
 
+  setVisible(v: boolean) {
+    this.visible = v;
+  }
   setScale(v: number) {
     this.scaleX = v;
     this.scaleY = v;

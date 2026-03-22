@@ -314,14 +314,6 @@ function cleanupNode(node: any): void {
   deleteMeta(node);
 }
 
-function syncDepths(children: Phaser.GameObjects.GameObject[]): void {
-  for (let i = 0; i < children.length; i++) {
-    if (children[i] && typeof children[i].setDepth === "function") {
-      children[i].setDepth(i);
-    }
-  }
-}
-
 function updateTextContent(textObj: any): void {
   // Collect text from child text nodes
   // For simplicity, just use the first text node's value
