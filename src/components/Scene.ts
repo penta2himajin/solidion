@@ -6,10 +6,12 @@
  */
 
 import {
+  createComponent,
   onCleanup,
   type JSX,
 } from "solid-js";
 import Phaser from "phaser";
+import { SceneContext, FrameManagerContext } from "../contexts";
 import { createFrameManager } from "../core/frame";
 import { solidionFrameUpdate } from "../core/sync";
 import { pushScene, popScene, getCurrentScene } from "../core/scene-stack";
@@ -39,7 +41,23 @@ export function Scene(props: SceneProps): any {
       pushScene(this);
       const rootContainer = this.add.container(0, 0);
       getMeta(rootContainer);
-      disposeRenderer = render(() => props.children, rootContainer);
+      // Provide Scene and FrameManager contexts so hooks
+      // (useScene, useFrame, useOscillation, etc.) work inside <Scene>
+      disposeRenderer = render(
+        () =>
+          createComponent(SceneContext.Provider, {
+            value: this,
+            get children() {
+              return createComponent(FrameManagerContext.Provider, {
+                value: frameManager,
+                get children() {
+                  return props.children;
+                },
+              });
+            },
+          }),
+        rootContainer
+      );
     },
     update(this: Phaser.Scene, time: number, delta: number) {
       solidionFrameUpdate(frameManager, time, delta);

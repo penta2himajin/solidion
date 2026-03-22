@@ -14,6 +14,7 @@ import { createSignal, createRoot, batch } from "solid-js";
 import { Game } from "solidion/components/Game";
 import { GameLoop } from "solidion/components/GameLoop";
 import { Show } from "solidion/components/Show";
+import { Scene } from "solidion/components/Scene";
 import { Preload } from "solidion/components/Preload";
 import { useStateMachine } from "solidion/hooks/useStateMachine";
 import { useSpring } from "solidion/hooks/useSpring";
@@ -523,8 +524,10 @@ function App() {
           fillColor={0x4ecdc4} origin={0.5} depth={101} alpha={0.5} />
       </Show>
 
-      {/* Preload assets with loading screen */}
-      <Preload
+      {/* Aquarium scene with Preload */}
+      <Show when={phase() === "aquarium"}>
+        <Scene name="aquarium">
+          <Preload
         assets={ASSETS}
         fallback={
           <>
@@ -600,7 +603,9 @@ function App() {
           fontSize={11} fontFamily="monospace" color="#aaaacc" origin={0.5} depth={32} />
       </Show>
 
-      </Preload>
+          </Preload>
+        </Scene>
+      </Show>
     </Game>
   );
 }
