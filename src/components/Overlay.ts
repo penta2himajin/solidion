@@ -32,16 +32,20 @@ export interface OverlayProps {
  * and renders children into it using the DOM. Returns null in the Phaser tree.
  */
 export function Overlay(props: OverlayProps): any {
+  /* v8 ignore next — SSR guard: document always exists in browser */
   if (typeof document === "undefined") return null;
 
   const scene = getCurrentScene();
+  /* v8 ignore next — defensive: Overlay is always inside <Game> */
   if (!scene) return null;
 
   const canvas = scene.sys.game.canvas;
   const parent = canvas.parentElement;
+  /* v8 ignore next — defensive: canvas always has a parent element */
   if (!parent) return null;
 
   // Ensure parent has relative positioning for overlay alignment
+  /* v8 ignore next 2 — depends on browser's default computed style */
   if (getComputedStyle(parent).position === "static") {
     parent.style.position = "relative";
   }

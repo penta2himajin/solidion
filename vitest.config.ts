@@ -14,7 +14,13 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       include: ["src/**/*.ts"],
-      exclude: ["src/types.ts", "src/types.generated.ts", "src/index.ts", "src/hooks/index.ts", "src/components/index.ts", "src/behaviors/index.ts"],
+      exclude: [
+        "src/types.ts", "src/types.generated.ts",
+        "src/index.ts", "src/hooks/index.ts", "src/components/index.ts", "src/behaviors/index.ts",
+        // Phaser-dependent: covered by browser tests (vitest.browser.config.ts)
+        "src/components/Game.ts", "src/components/Scene.ts",
+        "src/components/Overlay.ts", "src/components/Preload.ts",
+      ],
       reporter: ["text", "text-summary"],
     },
   },

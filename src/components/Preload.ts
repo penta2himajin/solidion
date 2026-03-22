@@ -43,6 +43,7 @@ export function Preload(props: PreloadProps): any {
 
   onMount(() => {
     const scene = getCurrentScene();
+    /* v8 ignore next 4 — defensive: Preload is always inside <Game> */
     if (!scene) {
       console.warn("Solidion: <Preload> used outside of a Scene. Assets not loaded.");
       setLoaded(true);
@@ -73,6 +74,7 @@ export function usePreload(assets: AssetSpec[]): () => boolean {
 
   onMount(() => {
     const scene = getCurrentScene();
+    /* v8 ignore next 3 — defensive: usePreload is always inside <Game> */
     if (!scene) {
       setLoaded(true);
       return;

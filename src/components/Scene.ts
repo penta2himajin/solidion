@@ -47,6 +47,7 @@ export function Scene(props: SceneProps): any {
   };
 
   const parentScene = getCurrentScene();
+  /* v8 ignore next — defensive: Scene is always inside <Game> */
   if (parentScene) {
     parentScene.scene.add(sceneKey, sceneConfig as any, props.active ?? true);
   }
