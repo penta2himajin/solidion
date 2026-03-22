@@ -305,7 +305,10 @@ function Seaweed(props: { x: number; height: number; index: number }) {
 }
 
 // ============================================================
-// Bubble Component (useOscillation for wobble, manual velocity)
+// Bubble Component (useOscillation for wobble)
+// Note: useVelocity not used here because it lacks reset/reactivate API
+// needed for object pooling. Velocity is managed manually.
+// This gap is documented for future useVelocity improvements.
 // ============================================================
 
 function Bubble(props: { slot: number }) {
@@ -344,7 +347,8 @@ function Bubble(props: { slot: number }) {
 }
 
 // ============================================================
-// Food Component (useVelocity for sinking)
+// Food Component (manual sinking velocity)
+// Same as Bubble: useVelocity lacks reset API for pool reactivation.
 // ============================================================
 
 function Food(props: { slot: number }) {
