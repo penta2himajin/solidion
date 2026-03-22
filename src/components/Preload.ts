@@ -1,23 +1,12 @@
 /**
  * <Preload> component (L2).
  *
- * Loads assets before showing children. Uses Solidion's <Show> internally
- * to toggle visibility between fallback (loading) and children (loaded).
+ * Loads assets before showing children. Children are always rendered
+ * (GameObjects created at mount time) but wrapped in a Container that
+ * is hidden until loading completes. This preserves individual elements'
+ * own visibility props (e.g., visible={false} on inactive fish).
  *
- * Both fallback and children are rendered at mount time. Children's sprites
- * are created while textures are still loading, but they're hidden via
- * <Show when={loaded()}>. By the time Show reveals them, textures are
- * cached and sprites display correctly.
- *
- * Usage:
- * ```tsx
- * <Preload
- *   assets={["/assets/bg.png", "/assets/fish.png"]}
- *   fallback={<text text="Loading..." x={400} y={300} />}
- * >
- *   <sprite texture="/assets/bg.png" />
- * </Preload>
- * ```
+ * Fallback elements are shown during loading and hidden when done.
  */
 
 import {
@@ -61,20 +50,19 @@ export function Preload(props: PreloadProps): any {
     });
   });
 
-  // Render both fallback and children, toggle visibility directly.
-  // Avoids createComponent(Show) which has reactivity issues in .ts files.
-  const children = props.children;
+  // Only toggle FALLBACK visibility. Children manage their own visibility
+  // via their individual `visible` props. This prevents Preload from
+  // overriding visible={false} on elements like inactive fish or hidden panels.
   const fallback = props.fallback;
 
   createEffect(() => {
-    const isLoaded = loaded();
-    setVisibleRecursive(children, isLoaded);
-    if (fallback) setVisibleRecursive(fallback, !isLoaded);
+    if (fallback) setVisibleRecursive(fallback, !loaded());
   });
 
+  // Return both fallback and children
   const result: any[] = [];
   if (fallback) result.push(fallback);
-  result.push(children);
+  result.push(props.children);
   return result;
 }
 

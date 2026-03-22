@@ -106,17 +106,16 @@ export function applyTexture(
 
   if (result.ready) {
     obj.setTexture(key);
-    obj.visible = true;
+    // Do NOT set obj.visible — visibility is controlled by the component
+    // (e.g., <Show>, visible prop). Setting it here would override
+    // component-level visibility on inactive/hidden elements.
   } else {
-    obj.visible = false;
     result.promise?.then(() => {
-      // Check if this node is still alive and still expects this texture
       if (!obj.scene) return;
       if (obj[TEXTURE_KEY] !== key) return;
       obj.setTexture(key);
-      obj.visible = true;
     }).catch(() => {
-      // Texture load failed - leave invisible
+      // Texture load failed
     });
   }
 }

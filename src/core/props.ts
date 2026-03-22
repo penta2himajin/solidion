@@ -94,6 +94,12 @@ export function reapplyProp(
  * or non-standard behavior. Everything else is resolved dynamically.
  */
 const PROP_OVERRIDES: Record<string, (obj: any, value: any) => void> = {
+  // Visible: also toggle input.enabled so hidden objects don't capture clicks
+  visible: (obj, v) => {
+    obj.visible = v;
+    if (obj.input) obj.input.enabled = v;
+  },
+
   // Origin: compound setter (setOrigin takes x, y)
   origin: (obj, v) => obj.setOrigin?.(v),
   originX: (obj, v) => obj.setOrigin?.(v, obj.originY ?? 0.5),

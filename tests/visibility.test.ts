@@ -21,6 +21,28 @@ describe("setVisibleRecursive", () => {
     expect(obj.visible).toBe(true);
   });
 
+  it("toggles input.enabled when setting visible on interactive object", () => {
+    const obj = new MockGameObject();
+    obj.setInteractive();
+    expect(obj.input.enabled).toBe(true);
+
+    setVisibleRecursive(obj, false);
+    expect(obj.visible).toBe(false);
+    expect(obj.input.enabled).toBe(false);
+
+    setVisibleRecursive(obj, true);
+    expect(obj.visible).toBe(true);
+    expect(obj.input.enabled).toBe(true);
+  });
+
+  it("handles visible toggle on non-interactive object (no input)", () => {
+    const obj = new MockGameObject();
+    expect(obj.input).toBeNull();
+    setVisibleRecursive(obj, false);
+    expect(obj.visible).toBe(false);
+    // No error
+  });
+
   it("sets visible on an array of GameObjects", () => {
     const a = new MockGameObject();
     const b = new MockGameObject();

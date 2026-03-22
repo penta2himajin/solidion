@@ -32,18 +32,24 @@ function isTextNode(node: any): node is SolidionTextNode {
  * Shape types need a default fillColor so isFilled=true.
  * Types not listed here are resolved dynamically via scene.add[type]().
  */
+/**
+ * Explicit overrides for element types that need special construction.
+ * Uses `new Phaser.GameObjects.XXX()` instead of `scene.add.xxx()` so that
+ * the object is NOT added to the display list here. Display list insertion
+ * is handled by insertNode, which avoids double-add issues (e.g., visible
+ * being reset to true when re-added to the display list).
+ */
 const ELEMENT_OVERRIDES: Record<
   string,
   (scene: Phaser.Scene) => Phaser.GameObjects.GameObject
 > = {
-  rectangle: (s) => s.add.rectangle(0, 0, 0, 0, 0xffffff),
-  ellipse: (s) => s.add.ellipse(0, 0, 0, 0, 0xffffff),
-  circle: (s) => s.add.circle(0, 0, 0, 0xffffff),
-  arc: (s) => s.add.arc(0, 0, 0, 0, 360, false, 0xffffff),
-  star: (s) => s.add.star(0, 0, 5, 0, 0, 0xffffff),
-  triangle: (s) => s.add.triangle(0, 0, 0, 0, 0, 0, 0, 0, 0xffffff),
-  polygon: (s) => (s.add as any).polygon(0, 0, [], 0xffffff),
-  text: (s) => s.add.text(0, 0, "", {}),
+  rectangle: (s) => new Phaser.GameObjects.Rectangle(s, 0, 0, 0, 0, 0xffffff),
+  ellipse: (s) => new Phaser.GameObjects.Ellipse(s, 0, 0, 0, 0, 0xffffff),
+  circle: (s) => new Phaser.GameObjects.Arc(s, 0, 0, 0, 0, 360, false, 0xffffff),
+  arc: (s) => new Phaser.GameObjects.Arc(s, 0, 0, 0, 0, 360, false, 0xffffff),
+  star: (s) => new Phaser.GameObjects.Star(s, 0, 0, 5, 0, 0, 0xffffff),
+  triangle: (s) => new Phaser.GameObjects.Triangle(s, 0, 0, 0, 0, 0, 0, 0, 0, 0xffffff),
+  text: (s) => new Phaser.GameObjects.Text(s, 0, 0, "", {}),
 };
 
 /**
@@ -71,10 +77,20 @@ function _createElement(type: string): Phaser.GameObjects.GameObject {
     return node;
   }
 
-  // 2. Try scene.add[type]() — Phaser's GameObjectFactory
+  // 2. Try scene.make[type]() — Phaser's GameObjectCreator (no display list add)
+  const maker = (scene.make as any)[type];
+  if (typeof maker === "function") {
+    const node = maker.call(scene.make, { x: 0, y: 0 }) as Phaser.GameObjects.GameObject;
+    getMeta(node);
+    return node;
+  }
+
+  // 3. Try scene.add[type]() — GameObjectFactory (adds to display list)
+  // Remove from display list immediately — insertNode will add it properly.
   const factory = (scene.add as any)[type];
   if (typeof factory === "function") {
     const node = factory.call(scene.add, 0, 0) as Phaser.GameObjects.GameObject;
+    scene.sys.displayList?.remove(node);
     getMeta(node);
     return node;
   }
@@ -145,6 +161,11 @@ function setProperty(node: any, name: string, value: any): void {
           queueMicrotask(() => {
             if (meta.interactivePending && !node.input && typeof node.setInteractive === "function") {
               node.setInteractive();
+              // Phaser's CreateInteractiveObject hardcodes enabled:true.
+              // Sync with current visible state so hidden objects don't capture clicks.
+              if (node.input && !node.visible) {
+                node.input.enabled = false;
+              }
             }
             meta.interactivePending = false;
           });

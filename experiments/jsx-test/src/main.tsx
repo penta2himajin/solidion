@@ -129,3 +129,4 @@ createRoot(() => {
     document.getElementById("game-container")?.appendChild(el);
   }
 });
+import "./vis-check";

@@ -87,6 +87,28 @@ describe("Property Application", () => {
       expect(sprite.visible).toBe(false);
     });
 
+    it("visible=false disables input.enabled on interactive objects", () => {
+      const sprite = new MockSprite();
+      sprite.setInteractive(); // input = { enabled: true }
+      expect(sprite.input.enabled).toBe(true);
+
+      setPhaserProp(sprite as any, "visible", false);
+      expect(sprite.visible).toBe(false);
+      expect(sprite.input.enabled).toBe(false);
+
+      setPhaserProp(sprite as any, "visible", true);
+      expect(sprite.visible).toBe(true);
+      expect(sprite.input.enabled).toBe(true);
+    });
+
+    it("visible works on objects without input (no error)", () => {
+      const sprite = new MockSprite();
+      expect(sprite.input).toBeNull();
+      setPhaserProp(sprite as any, "visible", false);
+      expect(sprite.visible).toBe(false);
+      // No error thrown — input is null, guard works
+    });
+
     it("sets text properties", () => {
       const text = new MockText();
       setPhaserProp(text as any, "text", "Hello");
