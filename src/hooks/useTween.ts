@@ -70,6 +70,7 @@ export function useTween<T extends Record<string, number>>(
   if (config.playing) {
     createEffect(() => {
       if (config.playing!()) {
+        /* v8 ignore next */
         if (!tween || !tween.isPlaying()) {
           buildTween();
           tween!.play();

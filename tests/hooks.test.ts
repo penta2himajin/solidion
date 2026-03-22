@@ -1912,6 +1912,46 @@ describe("useVelocity", () => {
 
     dispose();
   });
+
+  it("defaults to zero position and velocity when config is empty", async () => {
+    const { useVelocity } = await import("../src/hooks/useVelocity");
+    let pos!: () => { x: number; y: number };
+
+    const { dispose } = runInRoot(() => {
+      const _v = useVelocity({});
+      pos = _v.pos; _v.setActive(true);
+    });
+
+    expect(pos()).toEqual({ x: 0, y: 0 });
+
+    // Run a few frames — should stay at origin (no velocity, no acceleration)
+    for (let i = 0; i < 10; i++) {
+      mockFm.update(i * 16, 16);
+    }
+    expect(pos()).toEqual({ x: 0, y: 0 });
+
+    dispose();
+  });
+
+  it("uses partial initial config without velocity", async () => {
+    const { useVelocity } = await import("../src/hooks/useVelocity");
+    let pos!: () => { x: number; y: number };
+
+    const { dispose } = runInRoot(() => {
+      const _v = useVelocity({ initial: { x: 5, y: 0 } });
+      pos = _v.pos; _v.setActive(true);
+    });
+
+    expect(pos()).toEqual({ x: 5, y: 0 });
+
+    // No velocity specified — position should not change
+    for (let i = 0; i < 10; i++) {
+      mockFm.update(i * 16, 16);
+    }
+    expect(pos()).toEqual({ x: 5, y: 0 });
+
+    dispose();
+  });
 });
 
 // ============================================================

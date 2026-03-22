@@ -284,6 +284,45 @@ describe("Texture System", () => {
       await expect(promise).resolves.toBeUndefined();
     });
 
+    it("polls without calling start() when needsLoad is false (already loading via ensureTexture)", async () => {
+      const scene = new MockScene();
+      const startSpy = vi.spyOn(scene.load, "start");
+
+      // First, trigger ensureTexture to add the key to loadingTextures
+      ensureTexture(scene as any, "/assets/dup.png", "/assets/dup.png");
+      const callsAfterEnsure = startSpy.mock.calls.length;
+
+      // Now preloadAssets with the same key — needsLoad stays false
+      // because loadingTextures already has the key, so load.image is skipped
+      const promise = preloadAssets(scene as any, ["/assets/dup.png"]);
+
+      // start() should NOT have been called again by preloadAssets
+      expect(startSpy.mock.calls.length).toBe(callsAfterEnsure);
+
+      // Let polling run, then add the texture
+      setTimeout(() => { scene.textures.addKey("/assets/dup.png"); }, 60);
+
+      await expect(promise).resolves.toBeUndefined();
+    });
+
+    it("retries scene.load.start() on polling when textures are not yet available", async () => {
+      const scene = new MockScene();
+      const startSpy = vi.spyOn(scene.load, "start");
+
+      const promise = preloadAssets(scene as any, ["/assets/slow.png"]);
+
+      // Let first poll check fire (at 50ms) — texture not yet available, triggers retry start()
+      await new Promise((r) => setTimeout(r, 60));
+
+      // start() should have been called at least twice: once initially, once on retry
+      expect(startSpy.mock.calls.length).toBeGreaterThanOrEqual(2);
+
+      // Now add the texture so it resolves
+      scene.textures.addKey("/assets/slow.png");
+
+      await expect(promise).resolves.toBeUndefined();
+    });
+
     it("ignores unknown asset types (not string, atlas, or spritesheet)", async () => {
       const scene = new MockScene();
       const promise = preloadAssets(scene as any, [

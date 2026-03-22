@@ -768,6 +768,24 @@ describe("Renderer Exports (renderer.ts coverage)", () => {
       // Should still be interactive (not double-set)
       expect((node as any).input).toBeTruthy();
     });
+
+    it("disables input.enabled when node is not visible at microtask time", async () => {
+      const node = createElement("sprite");
+      const handler = vi.fn();
+
+      // Set onClick — this defers setInteractive via queueMicrotask
+      setProp(node, "onClick", handler);
+
+      // Before microtask fires, hide the node
+      node.visible = false;
+
+      // Wait for microtask
+      await new Promise<void>((r) => queueMicrotask(r));
+
+      // setInteractive was called (input exists), but enabled should be false
+      expect((node as any).input).toBeTruthy();
+      expect((node as any).input.enabled).toBe(false);
+    });
   });
 
   // ---- Event handler removal with removeInteractive ----
