@@ -20,6 +20,7 @@ import { useSpring } from "solidion/hooks/useSpring";
 import { useOscillation } from "solidion/hooks/useOscillation";
 import { useTween } from "solidion/hooks/useTween";
 import { useSequence } from "solidion/hooks/useSequence";
+import { useFollow } from "solidion/hooks/useFollow";
 import Phaser from "phaser";
 
 const ASSETS = [
@@ -205,6 +206,41 @@ function Fish(props: { slot: number; onSelect: (s: number) => void }) {
 }
 
 // ============================================================
+// Fry Component (baby fish following parent)
+// ============================================================
+
+const MAX_FRY = 5;
+const fryParents: number[] = Array(MAX_FRY).fill(-1); // parent fish slot index
+const fryActive: [() => boolean, (v: boolean) => void][] = [];
+
+function Fry(props: { slot: number }) {
+  const j = props.slot;
+  const [active, setActive] = createSignal(false);
+  const [color, setColor] = createSignal(FISH_COLORS[0]);
+  fryActive[j] = [active, setActive];
+
+  const parentPos = (): { x: number; y: number } => {
+    const pi = fryParents[j];
+    if (pi < 0 || !fish[pi].active) return { x: W / 2, y: H / 2 };
+    return { x: fish[pi].x, y: fish[pi].y };
+  };
+
+  // Follow parent with lag + small offset
+  const offset = { x: (j % 2 === 0 ? -1 : 1) * (12 + j * 4), y: 8 + j * 3 };
+  const followTarget = () => ({ x: parentPos().x + offset.x, y: parentPos().y + offset.y });
+  const pos = useFollow({ target: followTarget, speed: 0.08 + j * 0.02 });
+
+  return (
+    <Show when={active()}>
+      <ellipse x={pos().x} y={pos().y} width={12} height={7}
+        fillColor={color()} origin={0.5} depth={10} alpha={0.7} />
+      <ellipse x={pos().x + 3} y={pos().y - 1} width={2} height={2}
+        fillColor={0xffffff} origin={0.5} depth={11} />
+    </Show>
+  );
+}
+
+// ============================================================
 // Jellyfish Component
 // ============================================================
 
@@ -363,6 +399,15 @@ function App() {
     const tex = FISH_TEXTURES[ti];
     fish[s].ctrl.activate(col, 0.8 + Math.random() * 0.4, tex);
     setFishCount(c => c + 1);
+
+    // 50% chance to spawn a fry (baby fish) following this parent
+    if (Math.random() < 0.2) {
+      const fj = fryParents.findIndex((_, j) => !fryActive[j]?.[0]());
+      if (fj >= 0) {
+        fryParents[fj] = s;
+        fryActive[fj]?.[1](true);
+      }
+    }
   }
 
   const handlePointerDown = (ptr: Phaser.Input.Pointer) => {
@@ -384,6 +429,13 @@ function App() {
     const idx = selIdx();
     if (idx < 0) return;
     fish[idx].ctrl.deactivate();
+    // Also deactivate any fry following this fish
+    for (let j = 0; j < MAX_FRY; j++) {
+      if (fryParents[j] === idx) {
+        fryActive[j]?.[1](false);
+        fryParents[j] = -1;
+      }
+    }
     setSelIdx(-1); setShowPanel(false); setFishCount(c => c - 1);
   };
 
@@ -496,6 +548,9 @@ function App() {
 
       {/* Fish pool */}
       {Array.from({ length: MAX_FISH }, (_, i) => <Fish slot={i} onSelect={selectFish} />)}
+
+      {/* Fry pool (baby fish following parents) */}
+      {Array.from({ length: MAX_FRY }, (_, j) => <Fry slot={j} />)}
 
       {/* HUD */}
       <Show when={phase() === "aquarium"}>
