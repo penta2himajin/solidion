@@ -37,7 +37,7 @@ const ELEMENT_OVERRIDES: Record<
   (scene: Phaser.Scene) => Phaser.GameObjects.GameObject
 > = {
   rectangle: (s) => s.add.rectangle(0, 0, 0, 0, 0xffffff),
-  ellipse: (s) => s.add.circle(0, 0, 0, 0xffffff),  // scene.add uses "circle" for Ellipse
+  ellipse: (s) => s.add.ellipse(0, 0, 0, 0, 0xffffff),
   circle: (s) => s.add.circle(0, 0, 0, 0xffffff),
   arc: (s) => s.add.arc(0, 0, 0, 0, 360, false, 0xffffff),
   star: (s) => s.add.star(0, 0, 5, 0, 0, 0xffffff),

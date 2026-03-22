@@ -1,0 +1,495 @@
+/**
+ * Solidion Example: Aquarium (Phase A — geometric composites)
+ *
+ * An interactive aquarium simulation exercising Solidion features:
+ *  - L0: JSX, <Show>, <GameLoop>, <Game> input props
+ *  - Signal-per-slot pattern for dynamic entities (fish, food, bubbles)
+ *  - Fish AI state machine (manual, frame-driven)
+ *
+ * Phase A uses rectangles/ellipses only — no sprite textures.
+ */
+
+import { createSignal, createRoot, batch } from "solid-js";
+import { Game } from "solidion/components/Game";
+import { GameLoop } from "solidion/components/GameLoop";
+import { Show } from "solidion/components/Show";
+import Phaser from "phaser";
+
+// ============================================================
+// Constants
+// ============================================================
+
+const W = 640, H = 480;
+const SURFACE_Y = 30;
+const FLOOR_Y = H - 30;
+const TANK_LEFT = 20, TANK_RIGHT = W - 20;
+
+const COL_SAND = 0x8b7355;
+const COL_SEAWEED = 0x2d8b46;
+const COL_BUBBLE = 0x88ccee;
+const COL_FOOD = 0xddaa44;
+const FISH_COLORS = [0xff6b6b, 0x4ecdc4, 0xffe66d, 0xc084fc, 0xfb923c];
+
+const MAX_FISH = 15;
+const MAX_FOOD = 20;
+const MAX_BUBBLES = 30;
+
+// ============================================================
+// Signal-per-slot pools
+// ============================================================
+
+function createFishPool() {
+  return Array.from({ length: MAX_FISH }, () => ({
+    active: createSignal(false),
+    x: createSignal(0),
+    y: createSignal(0),
+    dir: createSignal(1),
+    color: createSignal(0),
+    size: createSignal(1),
+    sleeping: createSignal(false),
+    // Mutable state (not rendered directly)
+    state: "idle" as "idle" | "swim" | "eat" | "sleep",
+    stateTimer: 0,
+    targetX: 0,
+    targetY: 0,
+    hunger: 0,
+    id: 0,
+    _size: 1,
+    _color: 0,
+  }));
+}
+
+function createFoodPool() {
+  return Array.from({ length: MAX_FOOD }, () => ({
+    active: createSignal(false),
+    x: createSignal(0),
+    y: createSignal(0),
+    // Mutable
+    _x: 0,
+    _y: 0,
+    _active: false,
+  }));
+}
+
+function createBubblePool() {
+  return Array.from({ length: MAX_BUBBLES }, () => ({
+    active: createSignal(false),
+    x: createSignal(0),
+    y: createSignal(0),
+    diameter: createSignal(4),
+    // Mutable
+    _x: 0,
+    _y: 0,
+    _speed: 0,
+    _wobble: 0,
+    _active: false,
+  }));
+}
+
+// ============================================================
+// App
+// ============================================================
+
+let nextFishId = 1;
+
+function App() {
+  const [phase, setPhase] = createSignal<"title" | "aquarium">("title");
+  const [fishCount, setFishCount] = createSignal(0);
+  const [selectedFishIdx, setSelectedFishIdx] = createSignal(-1);
+
+  const fishPool = createFishPool();
+  const foodPool = createFoodPool();
+  const bubblePool = createBubblePool();
+  let bubbleTimer = 0;
+
+  // ── Spawn a fish into the pool ──
+  function spawnFish() {
+    const slot = fishPool.find(f => !f.active[0]());
+    if (!slot) return;
+    const color = FISH_COLORS[Math.floor(Math.random() * FISH_COLORS.length)];
+    const size = 0.8 + Math.random() * 0.4;
+    const x = TANK_LEFT + 40 + Math.random() * (TANK_RIGHT - TANK_LEFT - 80);
+    const y = SURFACE_Y + 60 + Math.random() * (FLOOR_Y - SURFACE_Y - 120);
+
+    slot.id = nextFishId++;
+    slot._color = color;
+    slot._size = size;
+    slot.state = "idle";
+    slot.stateTimer = 1000 + Math.random() * 2000;
+    slot.targetX = x;
+    slot.targetY = y;
+    slot.hunger = 0;
+
+    batch(() => {
+      slot.active[1](true);
+      slot.x[1](x);
+      slot.y[1](y);
+      slot.dir[1](Math.random() > 0.5 ? 1 : -1);
+      slot.color[1](color);
+      slot.size[1](size);
+      slot.sleeping[1](false);
+    });
+    setFishCount(c => c + 1);
+  }
+
+  // Initial fish
+  spawnFish(); spawnFish(); spawnFish();
+
+  // ── Handlers ──
+  const handlePointerDown = (ptr: Phaser.Input.Pointer) => {
+    if (phase() === "title") {
+      setPhase("aquarium");
+      return;
+    }
+    // Ignore UI areas
+    if (ptr.x > W - 120 && ptr.y < 35) return;
+    if (selectedFishIdx() >= 0 && ptr.x > W - 160) return;
+    // Only drop food in tank
+    if (ptr.y < SURFACE_Y + 10 || ptr.y > FLOOR_Y) return;
+    if (ptr.x < TANK_LEFT || ptr.x > TANK_RIGHT) return;
+
+    const slot = foodPool.find(f => !f._active);
+    if (!slot) return;
+    slot._active = true;
+    slot._x = ptr.x;
+    slot._y = ptr.y;
+    batch(() => {
+      slot.active[1](true);
+      slot.x[1](ptr.x);
+      slot.y[1](ptr.y);
+    });
+  };
+
+  const releaseFish = () => {
+    const idx = selectedFishIdx();
+    if (idx < 0) return;
+    const slot = fishPool[idx];
+    slot.active[1](false);
+    setSelectedFishIdx(-1);
+    setFishCount(c => c - 1);
+  };
+
+  // ── Game loop ──
+  const handleUpdate = (_time: number, delta: number) => {
+    if (phase() !== "aquarium") return;
+
+    // ── Update fish ──
+    for (let i = 0; i < fishPool.length; i++) {
+      const f = fishPool[i];
+      if (!f.active[0]()) continue;
+
+      let fx = f.x[0]();
+      let fy = f.y[0]();
+      f.hunger += delta * 0.01;
+      f.stateTimer -= delta;
+
+      // Find nearest active food
+      let nearFoodIdx = -1;
+      let nearFoodDist = Infinity;
+      for (let j = 0; j < foodPool.length; j++) {
+        if (!foodPool[j]._active) continue;
+        const dx = foodPool[j]._x - fx;
+        const dy = foodPool[j]._y - fy;
+        const d = Math.sqrt(dx * dx + dy * dy);
+        if (d < nearFoodDist) { nearFoodDist = d; nearFoodIdx = j; }
+      }
+
+      let newDir = f.dir[0]();
+
+      switch (f.state) {
+        case "idle":
+          fy += Math.sin(performance.now() / 800 + i * 1.7) * 0.3;
+          if (nearFoodIdx >= 0 && nearFoodDist < 150 && f.hunger > 30) {
+            f.state = "eat";
+            f.targetX = foodPool[nearFoodIdx]._x;
+            f.targetY = foodPool[nearFoodIdx]._y;
+            f.stateTimer = 3000;
+          } else if (f.stateTimer <= 0) {
+            f.state = "swim";
+            f.targetX = TANK_LEFT + 40 + Math.random() * (TANK_RIGHT - TANK_LEFT - 80);
+            f.targetY = SURFACE_Y + 60 + Math.random() * (FLOOR_Y - SURFACE_Y - 120);
+            f.stateTimer = 3000 + Math.random() * 3000;
+          }
+          break;
+
+        case "swim": {
+          const dx = f.targetX - fx;
+          const dy = f.targetY - fy;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist > 2) { fx += dx * 0.06; fy += dy * 0.06; }
+          newDir = dx > 0 ? 1 : -1;
+          if (nearFoodIdx >= 0 && nearFoodDist < 150 && f.hunger > 30) {
+            f.state = "eat";
+            f.targetX = foodPool[nearFoodIdx]._x;
+            f.targetY = foodPool[nearFoodIdx]._y;
+            f.stateTimer = 3000;
+          } else if (f.stateTimer <= 0) {
+            f.state = "idle";
+            f.stateTimer = 2000 + Math.random() * 2000;
+          }
+          break;
+        }
+
+        case "eat": {
+          const dx = f.targetX - fx;
+          const dy = f.targetY - fy;
+          newDir = dx > 0 ? 1 : -1;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist > 3) { fx += dx * 0.1; fy += dy * 0.1; }
+          if (nearFoodIdx >= 0 && nearFoodDist < 20) {
+            const fd = foodPool[nearFoodIdx];
+            fd._active = false;
+            fd.active[1](false);
+            f.hunger = 0;
+            f.state = "idle";
+            f.stateTimer = 2000 + Math.random() * 2000;
+          } else if (f.stateTimer <= 0) {
+            f.state = "idle";
+            f.stateTimer = 2000;
+          }
+          break;
+        }
+
+        case "sleep":
+          fy += Math.sin(performance.now() / 2000) * 0.1;
+          if (f.stateTimer <= 0) {
+            f.state = "idle";
+            f.stateTimer = 2000 + Math.random() * 2000;
+            f.sleeping[1](false);
+          }
+          break;
+      }
+
+      // Hungry → sleep
+      if (f.hunger > 100 && f.state !== "sleep" && Math.random() < 0.001) {
+        f.state = "sleep";
+        f.stateTimer = 5000 + Math.random() * 3000;
+        f.sleeping[1](true);
+      }
+
+      fx = Phaser.Math.Clamp(fx, TANK_LEFT + 20, TANK_RIGHT - 20);
+      fy = Phaser.Math.Clamp(fy, SURFACE_Y + 30, FLOOR_Y - 20);
+
+      f.x[1](fx);
+      f.y[1](fy);
+      f.dir[1](newDir);
+    }
+
+    // ── Update food (sinking) ──
+    for (const fd of foodPool) {
+      if (!fd._active) continue;
+      fd._y += 0.3;
+      if (fd._y > FLOOR_Y) {
+        fd._active = false;
+        fd.active[1](false);
+      } else {
+        fd.y[1](fd._y);
+      }
+    }
+
+    // ── Update bubbles ──
+    bubbleTimer -= delta;
+    if (bubbleTimer <= 0) {
+      bubbleTimer = 200 + Math.random() * 500;
+      const slot = bubblePool.find(b => !b._active);
+      if (slot) {
+        slot._active = true;
+        slot._x = TANK_LEFT + 20 + Math.random() * (TANK_RIGHT - TANK_LEFT - 40);
+        slot._y = FLOOR_Y - 10;
+        slot._speed = 0.5 + Math.random() * 1.0;
+        slot._wobble = Math.random() * Math.PI * 2;
+        batch(() => {
+          slot.active[1](true);
+          slot.x[1](slot._x);
+          slot.y[1](slot._y);
+          slot.diameter[1](3 + Math.random() * 4);
+        });
+      }
+    }
+
+    for (const b of bubblePool) {
+      if (!b._active) continue;
+      b._y -= b._speed;
+      b._x += Math.sin(performance.now() / 500 + b._wobble) * 0.3;
+      if (b._y < SURFACE_Y) {
+        b._active = false;
+        b.active[1](false);
+      } else {
+        b.x[1](b._x);
+        b.y[1](b._y);
+      }
+    }
+  };
+
+  // ── Seaweed sway (reactive via GameLoop time) ──
+  const [tick, setTick] = createSignal(0);
+
+  const handleSeaweedTick = () => {
+    setTick(performance.now() / 1000);
+  };
+
+  // ── Render ──
+  return (
+    <Game width={W} height={H} backgroundColor={0x0a1a2e} parent="game-container"
+      onPointerDown={handlePointerDown}
+    >
+      <GameLoop onUpdate={(t, d) => { handleUpdate(t, d); handleSeaweedTick(); }} />
+
+      {/* ── Title screen ── */}
+      <Show when={phase() === "title"}>
+        <rectangle x={W / 2} y={H / 2} width={W} height={H} fillColor={0x0a1a2e} origin={0.5} depth={100} />
+        <text x={W / 2} y={H / 2 - 40} text="Solidion Aquarium"
+          fontSize={36} fontFamily="Georgia, serif" color="#4488cc"
+          origin={0.5} depth={101}
+        />
+        <text x={W / 2} y={H / 2 + 20} text="tap to start"
+          fontSize={16} fontFamily="monospace" color="#336688"
+          origin={0.5} depth={101}
+        />
+      </Show>
+
+      {/* ── Tank ── */}
+      <rectangle x={W / 2} y={SURFACE_Y + (FLOOR_Y - SURFACE_Y) / 2} width={W - 40} height={FLOOR_Y - SURFACE_Y}
+        fillColor={0x0e2040} origin={0.5} depth={0} alpha={0.5}
+      />
+      <rectangle x={W / 2} y={FLOOR_Y + 15} width={W - 40} height={30}
+        fillColor={COL_SAND} origin={0.5} depth={1}
+      />
+      <rectangle x={W / 2} y={SURFACE_Y} width={W - 40} height={2}
+        fillColor={0x4488aa} origin={0.5} depth={5} alpha={0.5}
+      />
+
+      {/* ── Seaweed ── */}
+      {[80, 200, 350, 500, 580].map((sx, i) => {
+        const sway = () => Math.sin(tick() * (1.2 + i * 0.3) + i) * 8;
+        const h = 40 + i * 15;
+        return (
+          <>
+            <rectangle x={sx + sway()} y={FLOOR_Y - h / 2} width={6} height={h}
+              fillColor={COL_SEAWEED} origin={0.5} depth={2} alpha={0.7}
+            />
+            <rectangle x={sx + 8 + sway() * 0.7} y={FLOOR_Y - h * 0.3} width={5} height={h * 0.6}
+              fillColor={0x3aad5c} origin={0.5} depth={2} alpha={0.5}
+            />
+          </>
+        );
+      })}
+
+      {/* ── Bubbles (signal-per-slot) ── */}
+      {bubblePool.map((b, i) => (
+        <ellipse
+          x={b.x[0]()} y={b.y[0]()}
+          width={b.diameter[0]()} height={b.diameter[0]()}
+          fillColor={COL_BUBBLE} origin={0.5} depth={4}
+          alpha={0.6}
+          visible={b.active[0]()}
+        />
+      ))}
+
+      {/* ── Food (signal-per-slot) ── */}
+      {foodPool.map((f) => (
+        <ellipse
+          x={f.x[0]()} y={f.y[0]()}
+          width={6} height={6}
+          fillColor={COL_FOOD} origin={0.5} depth={3}
+          visible={f.active[0]()}
+        />
+      ))}
+
+      {/* ── Fish (signal-per-slot) ── */}
+      {fishPool.map((f, i) => (
+        <Show when={f.active[0]()}>
+          {/* Hit area */}
+          <rectangle x={f.x[0]()} y={f.y[0]()} width={40 * f._size} height={28 * f._size}
+            fillColor={0x000000} origin={0.5} depth={13}
+            alpha={0.001}
+            onClick={() => setSelectedFishIdx(i)}
+          />
+          {/* Body */}
+          <ellipse x={f.x[0]()} y={f.y[0]()} width={30 * f._size} height={16 * f._size}
+            fillColor={f.color[0]()} origin={0.5} depth={10}
+            scaleX={f.dir[0]()}
+            alpha={f.sleeping[0]() ? 0.5 : 1}
+          />
+          {/* Tail */}
+          <rectangle
+            x={f.x[0]() - f.dir[0]() * 18 * f._size} y={f.y[0]()}
+            width={10 * f._size} height={12 * f._size}
+            fillColor={f.color[0]()} origin={0.5} depth={9}
+            alpha={f.sleeping[0]() ? 0.4 : 0.8}
+          />
+          {/* Eye */}
+          <ellipse
+            x={f.x[0]() + f.dir[0]() * 8 * f._size} y={f.y[0]() - 2 * f._size}
+            width={4 * f._size} height={f.sleeping[0]() ? 1 * f._size : 4 * f._size}
+            fillColor={0xffffff} origin={0.5} depth={11}
+          />
+          <ellipse
+            x={f.x[0]() + f.dir[0]() * 9 * f._size} y={f.y[0]() - 2 * f._size}
+            width={2 * f._size} height={f.sleeping[0]() ? 0.5 * f._size : 2 * f._size}
+            fillColor={0x000000} origin={0.5} depth={12}
+          />
+        </Show>
+      ))}
+
+      {/* ── HUD ── */}
+      <Show when={phase() === "aquarium"}>
+        <rectangle x={W - 60} y={16} width={100} height={24} fillColor={0x225588} origin={0.5} depth={20}
+          onClick={() => spawnFish()}
+        />
+        <text x={W - 60} y={16} text="+ Add Fish" fontSize={11} fontFamily="monospace" color="#aaccee"
+          origin={0.5} depth={21}
+        />
+        <text x={20} y={16} text={`Fish: ${fishCount()}`}
+          fontSize={12} fontFamily="monospace" color="#668899"
+          originX={0} originY={0.5} depth={20}
+        />
+      </Show>
+
+      {/* ── Stats panel ── */}
+      <Show when={selectedFishIdx() >= 0}>
+        <rectangle x={W - 80} y={H / 2} width={140} height={180}
+          fillColor={0x112233} origin={0.5} depth={30} alpha={0.9}
+        />
+        <text x={W - 80} y={H / 2 - 60}
+          text={`Fish #${selectedFishIdx() >= 0 ? fishPool[selectedFishIdx()].id : ""}`}
+          fontSize={14} fontFamily="monospace" color="#88bbdd"
+          origin={0.5} depth={31}
+        />
+        <text x={W - 80} y={H / 2 - 30}
+          text={`State: ${selectedFishIdx() >= 0 ? fishPool[selectedFishIdx()].state : ""}`}
+          fontSize={11} fontFamily="monospace" color="#668899"
+          origin={0.5} depth={31}
+        />
+        <text x={W - 80} y={H / 2 - 10}
+          text={`Hunger: ${selectedFishIdx() >= 0 ? Math.floor(fishPool[selectedFishIdx()].hunger) : 0}`}
+          fontSize={11} fontFamily="monospace" color="#668899"
+          origin={0.5} depth={31}
+        />
+        <rectangle x={W - 80} y={H / 2 + 30} width={80} height={24} fillColor={0x884444} origin={0.5} depth={31}
+          onClick={releaseFish}
+        />
+        <text x={W - 80} y={H / 2 + 30} text="Release" fontSize={11} fontFamily="monospace" color="#ffaaaa"
+          origin={0.5} depth={32}
+        />
+        <rectangle x={W - 80} y={H / 2 + 60} width={80} height={24} fillColor={0x444466} origin={0.5} depth={31}
+          onClick={() => setSelectedFishIdx(-1)}
+        />
+        <text x={W - 80} y={H / 2 + 60} text="Close" fontSize={11} fontFamily="monospace" color="#aaaacc"
+          origin={0.5} depth={32}
+        />
+      </Show>
+    </Game>
+  );
+}
+
+// ============================================================
+// Mount
+// ============================================================
+
+createRoot(() => {
+  const el = App();
+  if (el instanceof HTMLElement) {
+    document.getElementById("game-container")?.appendChild(el);
+  }
+});
