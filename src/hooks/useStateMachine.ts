@@ -1,5 +1,4 @@
 import { createSignal, createMemo, onMount, onCleanup, type Accessor } from "solid-js";
-import { useScene } from "../contexts";
 
 export interface StateConfig<S extends string> {
   animation?: string | Accessor<string>;
@@ -13,6 +12,14 @@ export interface StateConfig<S extends string> {
 export interface StateMachineConfig<S extends string> {
   initial: S;
   states: Record<S, StateConfig<S>>;
+  /**
+   * Timer mode:
+   * - "frame" (default): call tick(delta) manually each frame via GameLoop.
+   *   Works at L0. Durations are in milliseconds.
+   * - "scene": uses Phaser's scene.time.delayedCall for automatic timers.
+   *   Requires useScene() (L4). Integrates with Phaser's pause/timeScale.
+   */
+  timerMode?: "frame" | "scene";
 }
 
 export interface StateMachineReturn<S extends string> {
@@ -20,19 +27,66 @@ export interface StateMachineReturn<S extends string> {
   animation: Accessor<string>;
   send: (event: string) => void;
   is: (state: S) => boolean;
+  /**
+   * Advance the state machine's timer by `delta` milliseconds.
+   * Only used when timerMode is "frame" (default).
+   * Call this inside a <GameLoop onUpdate> or useFrame callback.
+   */
+  tick: (delta: number) => void;
 }
 
 /**
  * Declarative state machine hook.
- * State machine logic is pure Solid. Timers use Phaser's scene.time
- * for proper pause/resume/timeScale integration.
+ *
+ * Supports two timer modes:
+ * - "frame" (default): manual tick(delta) for frame-driven games (L0)
+ * - "scene": Phaser's scene.time for automatic timers (L4)
+ *
+ * Usage (frame mode — L0):
+ * ```tsx
+ * const machine = useStateMachine({
+ *   initial: "idle",
+ *   states: { idle: { duration: 1000, onComplete: "run" }, run: { ... } }
+ * });
+ * <GameLoop onUpdate={(_, delta) => machine.tick(delta)} />
+ * ```
+ *
+ * Usage (scene mode — L4):
+ * ```tsx
+ * const machine = useStateMachine({
+ *   initial: "idle",
+ *   timerMode: "scene",
+ *   states: { idle: { duration: 1000, onComplete: "run" }, run: { ... } }
+ * });
+ * // No tick() needed — timers managed by Phaser
+ * ```
  */
 export function useStateMachine<S extends string>(
   config: StateMachineConfig<S>
 ): StateMachineReturn<S> {
-  const scene = useScene();
+  const mode = config.timerMode ?? "frame";
   const [state, setState] = createSignal<S>(config.initial);
-  let timer: Phaser.Time.TimerEvent | null = null;
+
+  // Timer state for frame mode
+  let elapsed = 0;
+  let currentDuration = 0;
+  let currentOnComplete: S | null = null;
+
+  // Timer state for scene mode
+  let sceneTimer: any = null; // Phaser.Time.TimerEvent
+  let scene: any = null; // Phaser.Scene (only resolved in scene mode)
+
+  if (mode === "scene") {
+    try {
+      // Dynamically import to avoid L4 dependency when using frame mode
+      const { useScene } = require("../contexts");
+      scene = useScene();
+    } catch {
+      throw new Error(
+        'useStateMachine: timerMode "scene" requires being inside a <Game> component with scene context.'
+      );
+    }
+  }
 
   const currentConfig = (): StateConfig<S> => config.states[state()];
 
@@ -42,64 +96,73 @@ export function useStateMachine<S extends string>(
     return typeof anim === "function" ? anim() : anim;
   });
 
-  const transition = (to: S): void => {
+  function setupTimer(stateConfig: StateConfig<S>): void {
+    if (!stateConfig.duration || !stateConfig.onComplete) return;
+
+    if (mode === "frame") {
+      elapsed = 0;
+      currentDuration = stateConfig.duration;
+      currentOnComplete = stateConfig.onComplete;
+    } else {
+      sceneTimer = scene.time.delayedCall(stateConfig.duration, () => {
+        transition(stateConfig.onComplete!);
+      });
+    }
+  }
+
+  function clearTimer(): void {
+    if (mode === "frame") {
+      elapsed = 0;
+      currentDuration = 0;
+      currentOnComplete = null;
+    } else if (sceneTimer) {
+      sceneTimer.remove();
+      sceneTimer = null;
+    }
+  }
+
+  function transition(to: S): void {
     const prev = state();
     if (prev === to) return;
 
-    // Exit previous state
     config.states[prev].onExit?.();
-
-    // Clear timer
-    if (timer) {
-      timer.remove();
-      timer = null;
-    }
-
-    // Update state
+    clearTimer();
     setState(() => to);
 
-    // Enter new state
     const newConfig = config.states[to];
     newConfig.onEnter?.();
-
-    // Set up auto-transition timer
-    if (newConfig.duration && newConfig.onComplete) {
-      timer = scene.time.delayedCall(newConfig.duration, () => {
-        transition(newConfig.onComplete!);
-      });
-    }
-  };
+    setupTimer(newConfig);
+  }
 
   const send = (event: string): void => {
     const transitions = currentConfig().on;
     if (transitions && event in transitions) {
       const target = transitions[event as keyof typeof transitions];
-      if (target) {
-        transition(target);
-      }
+      if (target) transition(target);
     }
   };
 
   const is = (s: S): boolean => state() === s;
 
-  // Initialize: run onEnter for initial state and set up timer
+  const tick = (delta: number): void => {
+    if (mode !== "frame" || !currentOnComplete || currentDuration <= 0) return;
+    elapsed += delta;
+    if (elapsed >= currentDuration) {
+      const target = currentOnComplete;
+      transition(target);
+    }
+  };
+
+  // Initialize
   onMount(() => {
     const initConfig = config.states[config.initial];
     initConfig.onEnter?.();
-
-    if (initConfig.duration && initConfig.onComplete) {
-      timer = scene.time.delayedCall(initConfig.duration, () => {
-        transition(initConfig.onComplete!);
-      });
-    }
+    setupTimer(initConfig);
   });
 
   onCleanup(() => {
-    if (timer) {
-      timer.remove();
-      timer = null;
-    }
+    clearTimer();
   });
 
-  return { state, animation, send, is };
+  return { state, animation, send, is, tick };
 }

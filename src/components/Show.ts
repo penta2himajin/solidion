@@ -17,7 +17,7 @@
  */
 
 import { createEffect } from "solid-js";
-import { getMeta } from "../core/meta";
+import { setVisibleRecursive } from "../core/visibility";
 
 export interface ShowProps {
   when: boolean;
@@ -27,41 +27,9 @@ export interface ShowProps {
 export function Show(props: ShowProps): any {
   const children = props.children;
 
-  // After children are rendered, toggle visibility reactively
   createEffect(() => {
-    const visible = !!props.when;
-    setVisibleRecursive(children, visible);
+    setVisibleRecursive(children, !!props.when);
   });
 
   return children;
-}
-
-/**
- * Recursively set visible on a node or array of nodes.
- */
-function setVisibleRecursive(node: any, visible: boolean): void {
-  if (node == null) return;
-
-  if (Array.isArray(node)) {
-    for (const child of node) {
-      setVisibleRecursive(child, visible);
-    }
-    return;
-  }
-
-  if (typeof node === "function") {
-    // Accessor — evaluate and recurse
-    setVisibleRecursive(node(), visible);
-    return;
-  }
-
-  // Phaser GameObject
-  if (node && typeof node.setVisible === "function") {
-    node.setVisible(visible);
-    // Also set on children in meta
-    const meta = getMeta(node);
-    for (const child of meta.children) {
-      setVisibleRecursive(child, visible);
-    }
-  }
 }
