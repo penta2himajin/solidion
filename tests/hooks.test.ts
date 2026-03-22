@@ -2436,6 +2436,27 @@ describe("useOverlap", () => {
     dispose();
   });
 
+  it("nearest mode does not fire when no target is within threshold", async () => {
+    const { useOverlap } = await import("../src/hooks/useOverlap");
+    let called = false;
+
+    const { dispose } = runInRoot(() => {
+      useOverlap({
+        sources: () => [{ x: 0, y: 0 }],
+        targets: () => [{ x: 500, y: 500 }],
+        getPosition: (item: any) => ({ x: item.x, y: item.y }),
+        threshold: 10,
+        mode: "nearest",
+        onOverlap: () => { called = true; },
+      });
+    });
+
+    mockFm.update(0, 16);
+    expect(called).toBe(false);
+
+    dispose();
+  });
+
   it("defaults to 'all' mode when mode not specified", async () => {
     const { useOverlap } = await import("../src/hooks/useOverlap");
     const overlaps: number[] = [];
