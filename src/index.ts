@@ -67,3 +67,6 @@ export { solidionFrameUpdate } from "./core/sync";
 
 // Debug utilities
 export * as debug from "./debug";
+
+// Reactive ECS pattern (experimental)
+export * as ecs from "./ecs";

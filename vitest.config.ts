@@ -27,6 +27,7 @@ export default defineConfig({
   resolve: {
     conditions: ["browser", "development"],
     alias: {
+      "solid-js/store": resolve(__dirname, "node_modules/solid-js/store/dist/dev.js"),
       "solid-js/universal": resolve(__dirname, "node_modules/solid-js/universal/dist/dev.js"),
       "solid-js": resolve(__dirname, "node_modules/solid-js/dist/dev.js"),
     },
