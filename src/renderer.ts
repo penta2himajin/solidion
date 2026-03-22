@@ -322,6 +322,19 @@ function updateTextContent(textObj: any): void {
   // This is handled by replaceText directly
 }
 
+/** @internal Exported for testing only */
+export const _internal = {
+  setProperty,
+  removeNode,
+  replaceText,
+  getParentNode,
+  getFirstChild,
+  getNextSibling,
+  cleanupNode,
+  isTextNode,
+  _insertNode,
+};
+
 // ---- Export the renderer ----
 
 export const {

@@ -184,6 +184,31 @@ describe("Texture System", () => {
       applyTexture(sprite as any, "/assets/no-scene.png");
       // Should not throw
     });
+
+    it("skips setTexture for atlas when object has no setTexture method (line 91)", () => {
+      // Plain object without setTexture — triggers the false branch of typeof obj.setTexture === "function"
+      const obj = { scene: new MockScene(), visible: false } as any;
+      applyTexture(obj, "atlas:frame");
+      // Should not throw, visible should remain false (setTexture was not called)
+      expect(obj.visible).toBe(false);
+    });
+
+    it("handles load failure gracefully (catch path)", async () => {
+      const scene = new MockScene();
+      const sprite = new MockSprite();
+      sprite.scene = scene as any;
+
+      applyTexture(sprite as any, "/assets/fail.png");
+      expect(sprite.visible).toBe(false);
+
+      // Simulate load error for this key
+      const errorListener = (scene.load as any).listeners.get("loaderror");
+      errorListener?.({ key: "/assets/fail.png" });
+
+      await new Promise((r) => setTimeout(r, 0));
+      // Should remain invisible after failure
+      expect(sprite.visible).toBe(false);
+    });
   });
 
   describe("preloadAssets", () => {
@@ -248,6 +273,15 @@ describe("Texture System", () => {
     it("resolves immediately for empty asset list", async () => {
       const scene = new MockScene();
       const promise = preloadAssets(scene as any, []);
+      await expect(promise).resolves.toBeUndefined();
+    });
+
+    it("ignores unknown asset types (not string, atlas, or spritesheet)", async () => {
+      const scene = new MockScene();
+      const promise = preloadAssets(scene as any, [
+        { type: "audio", key: "bgm", url: "/bgm.mp3" } as any,
+      ]);
+      // Unknown type is skipped, resolves immediately
       await expect(promise).resolves.toBeUndefined();
     });
   });

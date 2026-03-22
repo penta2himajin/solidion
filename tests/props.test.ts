@@ -248,6 +248,98 @@ describe("Property Application", () => {
       setPhaserProp(obj as any, "nonExistentProp", 42);
       expect((obj as any).nonExistentProp).toBeUndefined();
     });
+
+    // ---- Cover ?. null branches for PROP_OVERRIDES (lines 99-100, 107-110) ----
+
+    it("originX/originY do nothing on object without setOrigin", () => {
+      const obj = { originX: 0.5, originY: 0.5 } as any;
+      setPhaserProp(obj, "originX", 0.0);
+      expect(obj.originX).toBe(0.5);
+
+      setPhaserProp(obj, "originY", 1.0);
+      expect(obj.originY).toBe(0.5);
+    });
+
+    it("originX/originY uses ?? default when originY/originX is undefined", () => {
+      // Object WITH setOrigin but WITHOUT originY/originX properties
+      const obj1 = {
+        setOrigin(x: number, y: number) { this._ox = x; this._oy = y; },
+        _ox: 0, _oy: 0,
+        // originY is undefined — triggers ?? 0.5 fallback
+      } as any;
+      setPhaserProp(obj1, "originX", 0.3);
+      expect(obj1._ox).toBe(0.3);
+      expect(obj1._oy).toBe(0.5); // fallback
+
+      const obj2 = {
+        setOrigin(x: number, y: number) { this._ox = x; this._oy = y; },
+        _ox: 0, _oy: 0,
+        // originX is undefined — triggers ?? 0.5 fallback
+      } as any;
+      setPhaserProp(obj2, "originY", 0.7);
+      expect(obj2._ox).toBe(0.5); // fallback
+      expect(obj2._oy).toBe(0.7);
+    });
+
+    it("fillColor/fillAlpha do nothing on object without setFillStyle", () => {
+      const obj = { fillColor: 0x000000, fillAlpha: 1 } as any;
+      setPhaserProp(obj, "fillColor", 0xff0000);
+      expect(obj.fillColor).toBe(0x000000);
+
+      setPhaserProp(obj, "fillAlpha", 0.5);
+      expect(obj.fillAlpha).toBe(1);
+    });
+
+    it("fillColor/fillAlpha uses ?? default when fillAlpha/fillColor is undefined", () => {
+      const obj1 = {
+        setFillStyle(color: number, alpha: number) { this._fc = color; this._fa = alpha; },
+        _fc: 0, _fa: 0,
+        // fillAlpha is undefined — triggers ?? 1 fallback
+      } as any;
+      setPhaserProp(obj1, "fillColor", 0xff0000);
+      expect(obj1._fc).toBe(0xff0000);
+      expect(obj1._fa).toBe(1); // fallback
+
+      const obj2 = {
+        setFillStyle(color: number, alpha: number) { this._fc = color; this._fa = alpha; },
+        _fc: 0, _fa: 0,
+        fillColor: 0xaabbcc,
+        // fillColor exists, fillAlpha prop tested via fillAlpha override
+      } as any;
+      setPhaserProp(obj2, "fillAlpha", 0.5);
+      expect(obj2._fc).toBe(0xaabbcc);
+      expect(obj2._fa).toBe(0.5);
+    });
+
+    it("strokeColor/lineWidth do nothing on object without setStrokeStyle", () => {
+      const obj = { strokeColor: 0, lineWidth: 1, strokeAlpha: 1 } as any;
+      setPhaserProp(obj, "strokeColor", 0x00ff00);
+      expect(obj.strokeColor).toBe(0);
+
+      setPhaserProp(obj, "lineWidth", 5);
+      expect(obj.lineWidth).toBe(1);
+    });
+
+    it("strokeColor/lineWidth uses ?? defaults when properties are undefined", () => {
+      const obj1 = {
+        setStrokeStyle(w: number, c: number, a: number) { this._lw = w; this._sc = c; this._sa = a; },
+        _lw: 0, _sc: 0, _sa: 0,
+        // lineWidth and strokeAlpha undefined — triggers ?? 1 fallbacks
+      } as any;
+      setPhaserProp(obj1, "strokeColor", 0x00ff00);
+      expect(obj1._lw).toBe(1); // lineWidth ?? 1
+      expect(obj1._sc).toBe(0x00ff00);
+      expect(obj1._sa).toBe(1); // strokeAlpha ?? 1
+
+      const obj2 = {
+        setStrokeStyle(w: number, c: number, a: number) { this._lw = w; this._sc = c; this._sa = a; },
+        _lw: 0, _sc: 0, _sa: 0,
+        // strokeColor and strokeAlpha undefined
+      } as any;
+      setPhaserProp(obj2, "lineWidth", 3);
+      expect(obj2._lw).toBe(3);
+      expect(obj2._sa).toBe(1); // strokeAlpha ?? 1
+    });
   });
 
   describe("applyProp with deltas", () => {

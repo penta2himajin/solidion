@@ -27,6 +27,7 @@ import {
   setProp,
   mergeProps,
   use,
+  _internal,
 } from "../src/renderer";
 
 import { createRoot, createSignal } from "solid-js";
@@ -1433,6 +1434,225 @@ describe("Renderer Exports (renderer.ts coverage)", () => {
       expect(merged.y).toBe(30);
       expect(merged.alpha).toBe(0.5);
       expect(merged.x).toBe(10);
+    });
+  });
+
+  // ---- Cover uncovered branches (lines 164, 274-294, 310) ----
+
+  describe("setProperty texture on node without setTexture (line 164)", () => {
+    it("falls through to applyProp when node has no setTexture", () => {
+      const node = createElement("rectangle");
+      // rectangle has no setTexture method, so texture prop falls through to applyProp
+      expect(() => setProp(node, "texture", "foo.png")).not.toThrow();
+    });
+  });
+
+  describe("setProperty ref edge cases", () => {
+    it("does nothing for ref that is neither function nor object with current", () => {
+      const node = createElement("sprite");
+      // Pass a string as ref — not a function, not an object with "current"
+      expect(() => setProp(node, "ref", "not-a-ref")).not.toThrow();
+      // Pass null
+      expect(() => setProp(node, "ref", null)).not.toThrow();
+      // Pass a number
+      expect(() => setProp(node, "ref", 42)).not.toThrow();
+    });
+  });
+
+  describe("insertNode with scene but no displayList (branch 34)", () => {
+    it("handles missing displayList gracefully", () => {
+      const parent = createElement("sprite");
+      // Create a child with scene.sys.displayList = null
+      const child = createElement("sprite");
+      (child as any).scene = { sys: { displayList: null } };
+      // parent is not a Container, so it falls through to scene.sys.displayList?.add
+      // displayList is null, so ?.add is a no-op
+      expect(() => insertNode(parent, child)).not.toThrow();
+    });
+  });
+
+  describe("removeNode edge cases", () => {
+    it("handles removeNode for text node from text parent (branch 36)", () => {
+      const parent = createElement("text") as any;
+      const textNode = createTextNode("hello");
+
+      // Insert text node, then switch to null to trigger removeNode for text node
+      let setContent!: (v: any) => void;
+
+      const dispose = createRoot((dispose) => {
+        const [content, _setContent] = createSignal<any>("hello");
+        setContent = _setContent;
+
+        const marker = createTextNode("");
+        insertNode(parent, marker);
+        insert(parent, () => content(), marker);
+
+        return dispose;
+      });
+
+      // Setting to null triggers removeNode on text node, parent has setText
+      setContent(null);
+
+      dispose();
+    });
+  });
+
+  describe("cleanupNode with node that has no destroy method (line 310)", () => {
+    it("skips destroy call when node has no destroy method", () => {
+      const parent = createElement("sprite");
+
+      // Create a child-like object with no destroy method
+      const fakeChild = {
+        scene: scene,
+        parentContainer: null,
+        on: () => fakeChild,
+        off: () => fakeChild,
+        emit: () => {},
+        removeAllListeners: () => {},
+        // No destroy method
+      } as any;
+
+      // Give it meta so getMeta works
+      getMeta(fakeChild);
+
+      let setShow!: (v: boolean) => void;
+
+      const dispose = createRoot((dispose) => {
+        const [show, _setShow] = createSignal(true);
+        setShow = _setShow;
+
+        insert(parent, () => (show() ? fakeChild : null));
+
+        return dispose;
+      });
+
+      // Remove — cleanupNode should handle missing destroy gracefully
+      setShow(false);
+
+      dispose();
+    });
+  });
+
+  // ===========================================================================
+  // Direct tests of internal functions for full branch coverage
+  // ===========================================================================
+
+  describe("_internal direct tests", () => {
+    it("removeNode with null parent (B38: !parent early return)", () => {
+      const node = createElement("sprite");
+      // Directly call removeNode with null parent
+      expect(() => _internal.removeNode(null, node)).not.toThrow();
+    });
+
+    it("removeNode with null node (B38: !node early return)", () => {
+      const parent = createElement("sprite");
+      expect(() => _internal.removeNode(parent, null)).not.toThrow();
+    });
+
+    it("removeNode where node is not in parent children (B40: idx < 0)", () => {
+      const parent = createElement("sprite");
+      const orphan = createElement("sprite");
+      // orphan was never inserted into parent, so idx will be -1
+      expect(() => _internal.removeNode(parent, orphan)).not.toThrow();
+    });
+
+    it("removeNode text node from parent without setText (B36 false branch)", () => {
+      const parent = createElement("sprite"); // sprite has no setText
+      const textNode = createTextNode("hello");
+      (textNode as any).parent = parent;
+
+      // Call removeNode for text node — parent has no setText
+      _internal.removeNode(parent, textNode);
+      expect((textNode as any).parent).toBeNull();
+    });
+
+    it("removeNode text node from parent with setText (B36 true branch)", () => {
+      const parent = createElement("text") as any;
+      const textNode = createTextNode("hello");
+      (textNode as any).parent = parent;
+
+      _internal.removeNode(parent, textNode);
+      expect((textNode as any).parent).toBeNull();
+    });
+
+    it("replaceText with parent that has no setText (B41 false branch)", () => {
+      const textNode = createTextNode("hello");
+      const nonTextParent = createElement("sprite");
+      (textNode as any).parent = nonTextParent;
+
+      // replaceText: parent exists but has no setText method
+      _internal.replaceText(textNode as any, "updated");
+      expect((textNode as any).value).toBe("updated");
+    });
+
+    it("getParentNode with null/undefined node (B44: node?.parentContainer)", () => {
+      expect(_internal.getParentNode(null)).toBeNull();
+      expect(_internal.getParentNode(undefined)).toBeNull();
+    });
+
+    it("getFirstChild on text node (B45: isTextNode early return)", () => {
+      const textNode = createTextNode("hello");
+      expect(_internal.getFirstChild(textNode)).toBeNull();
+    });
+
+    it("getNextSibling with no parent (B47: !parent early return)", () => {
+      const orphan = createElement("sprite");
+      // orphan has parentContainer = null
+      expect(_internal.getNextSibling(orphan)).toBeNull();
+    });
+
+    it("getNextSibling when node not found in parent children (B48: idx < 0)", () => {
+      const parent = createElement("sprite");
+      const child = createElement("sprite");
+      const notChild = createElement("sprite");
+
+      insertNode(parent, child);
+      (notChild as any).parentContainer = parent;
+
+      // notChild is NOT in parent's meta.children, so indexOf returns -1
+      expect(_internal.getNextSibling(notChild)).toBeNull();
+    });
+
+    it("cleanupNode on text node (B50: isTextNode early return)", () => {
+      const textNode = createTextNode("hello");
+      expect(() => _internal.cleanupNode(textNode)).not.toThrow();
+    });
+
+    it("cleanupNode on null/undefined (B51: !node early return)", () => {
+      expect(() => _internal.cleanupNode(null)).not.toThrow();
+      expect(() => _internal.cleanupNode(undefined)).not.toThrow();
+    });
+
+    it("cleanupNode removes handler with unresolvable event name (B52)", () => {
+      const node = createElement("sprite");
+      const meta = getMeta(node);
+      // Store a handler with a name that resolveEventName won't resolve
+      meta.handlers.set("notAnEventProp", vi.fn());
+
+      // cleanupNode should handle resolveEventName returning undefined
+      expect(() => _internal.cleanupNode(node)).not.toThrow();
+    });
+
+    it("insertNode with scene node but no displayList (displayList?.add null path)", () => {
+      const parent = createElement("sprite");
+      const child = new MockGameObject() as any;
+      child.scene = { sys: { displayList: null } } as any;
+      child.parentContainer = null;
+
+      _internal._insertNode(parent, child);
+      const meta = getMeta(parent);
+      expect(meta.children).toContain(child);
+    });
+
+    it("insertNode with node that has no scene (B34: node.scene falsy)", () => {
+      const parent = createElement("sprite");
+      const child = new MockGameObject() as any;
+      child.scene = null;
+      child.parentContainer = null;
+
+      _internal._insertNode(parent, child);
+      const meta = getMeta(parent);
+      expect(meta.children).toContain(child);
     });
   });
 });

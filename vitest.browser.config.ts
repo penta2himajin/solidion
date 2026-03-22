@@ -22,6 +22,12 @@ export default defineConfig({
       ],
       headless: true,
     },
+    coverage: {
+      provider: "v8",
+      include: ["src/**/*.ts"],
+      exclude: ["src/types.ts", "src/types.generated.ts", "src/index.ts", "src/hooks/index.ts", "src/components/index.ts", "src/behaviors/index.ts"],
+      reporter: ["text", "text-summary"],
+    },
   },
   resolve: {
     alias: {
