@@ -23,6 +23,7 @@ import { useTween } from "solidion/hooks/useTween";
 import { useSequence } from "solidion/hooks/useSequence";
 import { useFollow } from "solidion/hooks/useFollow";
 import { useVelocity } from "solidion/hooks/useVelocity";
+import { useOverlap } from "solidion/hooks/useOverlap";
 import { OscillateBehavior, SpringBehavior } from "solidion/behaviors";
 import * as debug from "solidion/debug";
 import Phaser from "phaser";
@@ -412,6 +413,30 @@ function Food(props: { slot: number }) {
 // App
 // ============================================================
 
+// ============================================================
+// Fish-Food Overlap Detection (useOverlap — L1a)
+// Replaces manual for-loop in GameLoop with declarative hook
+// ============================================================
+
+function FishFoodOverlap() {
+  useOverlap({
+    sources: () => fish.filter(f => f.active),
+    targets: () => food.filter(f => f.active),
+    getPosition: (item: any) => ({ x: item.x, y: item.y }),
+    threshold: FOOD_NEAR,
+    mode: "nearest",
+    onOverlap: (f: FishMut, fd: FoodMut, dist: number) => {
+      if (f.state === "eat" && dist < FOOD_EAT) {
+        fd.deactivate(); f.hunger = 0;
+      } else if ((f.state === "idle" || f.state === "swim") && f.hunger > 30) {
+        f.setTarget(fd.x, fd.y);
+        f.send("FOOD_NEARBY");
+      }
+    },
+  });
+  return null;
+}
+
 function App() {
   const [phase, setPhase] = createSignal<"title" | "aquarium">("title");
   const [fishCount, setFishCount] = createSignal(0);
@@ -474,29 +499,12 @@ function App() {
   const handleUpdate = (_t: number, delta: number) => {
     if (phase() !== "aquarium") return;
 
-    // Fish AI: tick machines, check food proximity
+    // Fish AI: tick machines + hunger
     for (let i = 0; i < MAX_FISH; i++) {
       const f = fish[i];
       if (!f.active) continue;
       f.tick(delta);
       f.hunger += delta * 0.003;
-
-      // Nearest food
-      let ni = -1, nd = Infinity;
-      for (let j = 0; j < MAX_FOOD; j++) {
-        if (!food[j].active) continue;
-        const dx = food[j].x - f.x, dy = food[j].y - f.y;
-        const d = Math.sqrt(dx * dx + dy * dy);
-        if (d < nd) { nd = d; ni = j; }
-      }
-
-      if (f.state === "eat" && ni >= 0 && nd < FOOD_EAT) {
-        food[ni].deactivate(); f.hunger = 0;
-      } else if ((f.state === "idle" || f.state === "swim") && ni >= 0 && nd < FOOD_NEAR && f.hunger > 30) {
-        f.setTarget(food[ni].x, food[ni].y);
-        f.send("FOOD_NEARBY");
-      }
-
       if (f.hunger > 100 && f.state === "swim" && Math.random() < 0.001) f.send("SLEEPY");
     }
 
@@ -530,6 +538,7 @@ function App() {
     <Game width={W} height={H} backgroundColor={0x0a1a2e} parent="game-container"
       onPointerDown={handlePointerDown}>
       <GameLoop onUpdate={handleUpdate} />
+      <FishFoodOverlap />
 
       {/* Title Screen */}
       <Show when={phase() === "title"}>

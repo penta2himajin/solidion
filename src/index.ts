@@ -40,6 +40,7 @@ export { useTime } from "./hooks/useTime";
 export { useTween, type TweenConfig } from "./hooks/useTween";
 export { useStateMachine, type StateMachineConfig, type StateConfig, type StateMachineReturn } from "./hooks/useStateMachine";
 export { useSequence, type SequenceStep, type SequenceReturn } from "./hooks/useSequence";
+export { useOverlap, type OverlapConfig } from "./hooks/useOverlap";
 
 // Hooks: L1b continuous behaviors
 export { useSpring, type SpringConfig } from "./hooks/useSpring";

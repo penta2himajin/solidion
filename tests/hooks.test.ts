@@ -2331,3 +2331,128 @@ describe("Sequence Logic (pure)", () => {
     expect(onStart).toHaveBeenCalledTimes(2);
   });
 });
+
+// useOverlap
+describe("useOverlap", () => {
+  it("detects overlapping pairs in 'all' mode", async () => {
+    const { useOverlap } = await import("../src/hooks/useOverlap");
+    const overlaps: [string, string, number][] = [];
+
+    const sources = [
+      { id: "a", x: 0, y: 0 },
+      { id: "b", x: 100, y: 0 },
+    ];
+    const targets = [
+      { id: "x", x: 5, y: 0 },
+      { id: "y", x: 200, y: 0 },
+    ];
+
+    const { dispose } = runInRoot(() => {
+      useOverlap({
+        sources: () => sources,
+        targets: () => targets,
+        getPosition: (item) => ({ x: item.x, y: item.y }),
+        threshold: 20,
+        mode: "all",
+        onOverlap: (s, t, d) => overlaps.push([s.id, t.id, d]),
+      });
+    });
+
+    mockFm.update(0, 16);
+    expect(overlaps.length).toBe(1);
+    expect(overlaps[0][0]).toBe("a");
+    expect(overlaps[0][1]).toBe("x");
+    expect(overlaps[0][2]).toBeCloseTo(5, 1);
+
+    dispose();
+  });
+
+  it("finds nearest target in 'nearest' mode", async () => {
+    const { useOverlap } = await import("../src/hooks/useOverlap");
+    const overlaps: [string, string][] = [];
+
+    const sources = [{ id: "fish", x: 50, y: 0 }];
+    const targets = [
+      { id: "far", x: 100, y: 0 },
+      { id: "near", x: 55, y: 0 },
+      { id: "farther", x: 200, y: 0 },
+    ];
+
+    const { dispose } = runInRoot(() => {
+      useOverlap({
+        sources: () => sources,
+        targets: () => targets,
+        getPosition: (item) => ({ x: item.x, y: item.y }),
+        threshold: 200,
+        mode: "nearest",
+        onOverlap: (s, t) => overlaps.push([s.id, t.id]),
+      });
+    });
+
+    mockFm.update(0, 16);
+    expect(overlaps.length).toBe(1);
+    expect(overlaps[0][1]).toBe("near"); // nearest target
+
+    dispose();
+  });
+
+  it("skips when sources or targets are empty", async () => {
+    const { useOverlap } = await import("../src/hooks/useOverlap");
+    let called = false;
+
+    const { dispose } = runInRoot(() => {
+      useOverlap({
+        sources: () => [],
+        targets: () => [{ x: 0, y: 0 }],
+        getPosition: (item: any) => ({ x: item.x, y: item.y }),
+        threshold: 100,
+        onOverlap: () => { called = true; },
+      });
+    });
+
+    mockFm.update(0, 16);
+    expect(called).toBe(false);
+
+    dispose();
+  });
+
+  it("does not fire when distance exceeds threshold", async () => {
+    const { useOverlap } = await import("../src/hooks/useOverlap");
+    let called = false;
+
+    const { dispose } = runInRoot(() => {
+      useOverlap({
+        sources: () => [{ x: 0, y: 0 }],
+        targets: () => [{ x: 100, y: 0 }],
+        getPosition: (item: any) => ({ x: item.x, y: item.y }),
+        threshold: 10,
+        onOverlap: () => { called = true; },
+      });
+    });
+
+    mockFm.update(0, 16);
+    expect(called).toBe(false);
+
+    dispose();
+  });
+
+  it("defaults to 'all' mode when mode not specified", async () => {
+    const { useOverlap } = await import("../src/hooks/useOverlap");
+    const overlaps: number[] = [];
+
+    const { dispose } = runInRoot(() => {
+      useOverlap({
+        sources: () => [{ x: 0, y: 0 }],
+        targets: () => [{ x: 1, y: 0 }, { x: 2, y: 0 }],
+        getPosition: (item: any) => ({ x: item.x, y: item.y }),
+        threshold: 10,
+        onOverlap: (_, __, d) => overlaps.push(d),
+      });
+    });
+
+    mockFm.update(0, 16);
+    expect(overlaps.length).toBe(2); // both targets within threshold
+
+    dispose();
+  });
+});
