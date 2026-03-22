@@ -1,5 +1,5 @@
 /**
- * Reactive ECS System components.
+ * Reactive ECS System components and iteration utilities.
  *
  * Each System is a Solid component that:
  * - Returns null (no visual output)
@@ -7,61 +7,92 @@
  * - Reads/writes a createStore via a user-provided update function
  *
  * Systems are composed by JSX ordering:
- *   <GameLoop>
- *     <SpringSystem ... />      ← runs first
- *     <OverlapSystem ... />     ← runs second
- *   </GameLoop>
+ *   <Game>
+ *     <System update={(time, delta) => { ... }} />  ← runs first
+ *     <System update={(time, delta) => { ... }} />  ← runs second
+ *   </Game>
  *
  * JSX child order = frame execution order.
  */
 
 import { onCleanup } from "solid-js";
+import { batch } from "solid-js";
+import { useFrameManager } from "../contexts";
 
-/**
- * Generic System component.
- *
- * Registers a frame callback that calls the user's `update` function
- * every frame. The update function receives time and delta, and is
- * expected to read/write a createStore via captured closure.
- *
- * Usage:
- * ```tsx
- * <System update={(time, delta) => {
- *   batch(() => {
- *     for (const fish of store.fish) {
- *       if (!fish.active) continue;
- *       const result = springStep(fish, fish.springConfig, delta / 1000);
- *       setStore("fish", store.fish.indexOf(fish), result);
- *     }
- *   });
- * }} />
- * ```
- */
 export interface SystemProps {
   update: (time: number, delta: number) => void;
+  /** Optional guard — when provided, update is skipped if it returns false. */
+  when?: () => boolean;
 }
 
 /**
- * Create a System component that uses a FrameManager for frame callbacks.
+ * System component that auto-resolves FrameManager from context.
  *
- * Since Systems run outside <Game> context (they're composed at the app level),
- * the FrameManager must be provided explicitly. This factory creates a System
- * bound to a specific FrameManager.
+ * Place inside <Game> or <Scene> — it reads the FrameManager context
+ * automatically. Each <System> registers one frame callback.
  *
  * Usage:
  * ```tsx
- * const fm = createFrameManager();
- * const System = createSystem(fm);
- *
- * <System update={(t, d) => { ... }} />
+ * <Game>
+ *   <System when={() => phase() === "play"} update={(time, delta) => {
+ *     forActive(store.fish, (f, i) => {
+ *       const next = springStep(f, config, delta / 1000);
+ *       setStore("fish", i, next);
+ *     });
+ *   }} />
+ * </Game>
  * ```
+ */
+export function System(props: SystemProps): null {
+  const fm = useFrameManager();
+  const unregister = fm.register((time, delta) => {
+    if (props.when && !props.when()) return;
+    props.update(time, delta);
+  });
+  onCleanup(unregister);
+  return null;
+}
+
+/**
+ * Create a System component bound to an explicit FrameManager.
+ *
+ * Use this when Systems run outside <Game>/<Scene> context
+ * and the FrameManager must be provided manually.
  */
 export function createSystemFactory(
   register: (cb: (time: number, delta: number) => void) => () => void
 ) {
-  return function System(props: SystemProps): null {
-    const unregister = register(props.update);
+  return function BoundSystem(props: SystemProps): null {
+    const unregister = register((time, delta) => {
+      if (props.when && !props.when()) return;
+      props.update(time, delta);
+    });
     onCleanup(unregister);
     return null;
   };
+}
+
+/**
+ * Iterate over active entities in a store array, wrapped in batch().
+ *
+ * Encapsulates the common ECS pattern:
+ *   batch → for-loop → active filter → callback
+ *
+ * Usage:
+ * ```tsx
+ * forActive(store.fish, (fish, index) => {
+ *   const next = springStep(fish, config, dt);
+ *   setStore("fish", index, next);
+ * });
+ * ```
+ */
+export function forActive<T extends { active: boolean }>(
+  entities: readonly T[],
+  fn: (entity: T, index: number) => void,
+): void {
+  batch(() => {
+    for (let i = 0; i < entities.length; i++) {
+      if (entities[i].active) fn(entities[i], i);
+    }
+  });
 }

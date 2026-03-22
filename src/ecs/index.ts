@@ -26,5 +26,5 @@ export {
   tweenStep, tweenLerp, type TweenState, type TweenConfig, type TweenStepResult,
 } from "./steps";
 
-// System component factory
-export { createSystemFactory, type SystemProps } from "./systems";
+// System components + iteration utilities
+export { System, createSystemFactory, forActive, type SystemProps } from "./systems";

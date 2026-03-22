@@ -142,7 +142,7 @@ describe("createStore + universal renderer", () => {
 
   // ── GameLoop-style frame mutations ──
 
-  it("batch mutations work in frame callback pattern", async () => {
+  it("batch mutations work in frame callback pattern", () => {
     interface Fish { active: boolean; x: number; hunger: number; }
     let finalX = 0;
     const dispose = createRoot(d => {
@@ -152,8 +152,8 @@ describe("createStore + universal renderer", () => {
 
       effect(() => { finalX = pool.fish[0].x; });
 
-      let frame = 0;
-      const interval = setInterval(() => {
+      // Simulate 3 frames synchronously (no timer dependency)
+      for (let frame = 0; frame < 3; frame++) {
         batch(() => {
           for (let i = 0; i < pool.fish.length; i++) {
             if (pool.fish[i].active) {
@@ -162,12 +162,10 @@ describe("createStore + universal renderer", () => {
             }
           }
         });
-        if (++frame >= 3) clearInterval(interval);
-      }, 5);
+      }
       return d;
     });
 
-    await new Promise(r => setTimeout(r, 30));
     expect(finalX).toBe(103);
     dispose();
   });
