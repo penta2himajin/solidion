@@ -27,26 +27,31 @@ function isTextNode(node: any): node is SolidionTextNode {
 }
 
 /**
- * Map of JSX tag names to Phaser GameObject factory functions.
+ * Explicit overrides for element types that need special construction.
+ * Shape types need a default fillColor so isFilled=true.
+ * Types not listed here are resolved dynamically via scene.add[type]().
  */
-const ELEMENT_FACTORIES: Record<
+const ELEMENT_OVERRIDES: Record<
   string,
   (scene: Phaser.Scene) => Phaser.GameObjects.GameObject
 > = {
-  sprite: (s) => new Phaser.GameObjects.Sprite(s, 0, 0, ""),
-  image: (s) => new Phaser.GameObjects.Image(s, 0, 0, ""),
-  container: (s) => new Phaser.GameObjects.Container(s, 0, 0),
-  text: (s) => new Phaser.GameObjects.Text(s, 0, 0, "", {}),
-  rectangle: (s) => new Phaser.GameObjects.Rectangle(s, 0, 0, 0, 0, 0xffffff),
-  ellipse: (s) => new Phaser.GameObjects.Ellipse(s, 0, 0, 0, 0, 0xffffff),
-  arc: (s) => new Phaser.GameObjects.Arc(s, 0, 0, 0, 0, 360, false, 0xffffff),
-  star: (s) => new Phaser.GameObjects.Star(s, 0, 0, 5, 0, 0, 0xffffff),
-  graphics: (s) => new Phaser.GameObjects.Graphics(s),
-  zone: (s) => new Phaser.GameObjects.Zone(s, 0, 0, 0, 0),
+  rectangle: (s) => s.add.rectangle(0, 0, 0, 0, 0xffffff),
+  ellipse: (s) => s.add.circle(0, 0, 0, 0xffffff),  // scene.add uses "circle" for Ellipse
+  circle: (s) => s.add.circle(0, 0, 0, 0xffffff),
+  arc: (s) => s.add.arc(0, 0, 0, 0, 360, false, 0xffffff),
+  star: (s) => s.add.star(0, 0, 5, 0, 0, 0xffffff),
+  triangle: (s) => s.add.triangle(0, 0, 0, 0, 0, 0, 0, 0, 0xffffff),
+  polygon: (s) => (s.add as any).polygon(0, 0, [], 0xffffff),
+  text: (s) => s.add.text(0, 0, "", {}),
 };
 
 /**
  * Create a Phaser GameObject from a JSX tag name.
+ *
+ * Resolution order:
+ * 1. ELEMENT_OVERRIDES — explicit factories for types needing special args
+ * 2. scene.add[type]() — Phaser's GameObjectFactory (most types)
+ * 3. Error if neither works
  */
 function _createElement(type: string): Phaser.GameObjects.GameObject {
   const scene = getCurrentScene();
@@ -57,17 +62,26 @@ function _createElement(type: string): Phaser.GameObjects.GameObject {
     );
   }
 
-  const factory = ELEMENT_FACTORIES[type];
-  if (!factory) {
-    throw new Error(
-      `Solidion: Unknown element type "${type}". ` +
-        `Known types: ${Object.keys(ELEMENT_FACTORIES).join(", ")}`
-    );
+  // 1. Check explicit overrides
+  const override = ELEMENT_OVERRIDES[type];
+  if (override) {
+    const node = override(scene);
+    getMeta(node);
+    return node;
   }
 
-  const node = factory(scene);
-  getMeta(node); // Initialize metadata
-  return node;
+  // 2. Try scene.add[type]() — Phaser's GameObjectFactory
+  const factory = (scene.add as any)[type];
+  if (typeof factory === "function") {
+    const node = factory.call(scene.add, 0, 0) as Phaser.GameObjects.GameObject;
+    getMeta(node);
+    return node;
+  }
+
+  throw new Error(
+    `Solidion: Unknown element type "${type}". ` +
+      `Not found in overrides or scene.add.${type}().`
+  );
 }
 
 /**
@@ -327,6 +341,7 @@ export const {
   spread,
   setProp,
   mergeProps,
+  use,
 } = createRenderer({
   createElement: _createElement,
   createTextNode: _createTextNode,

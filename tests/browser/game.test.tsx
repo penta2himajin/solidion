@@ -120,4 +120,22 @@ describe("Game component (browser)", () => {
     await new Promise((r) => setTimeout(r, 100));
     // If we got here without errors, Show works
   });
+
+  it("ref prop provides raw Phaser GameObject", async () => {
+    let rectRef: any = null;
+
+    const result = await mountGame(() => (
+      <Game width={200} height={150} backgroundColor={0x000000} parent={undefined}>
+        <rectangle x={100} y={75} width={50} height={50} fillColor={0xff0000}
+          origin={0.5} ref={(el: any) => { rectRef = el; }}
+        />
+      </Game>
+    ));
+    cleanup = result.cleanup;
+
+    expect(rectRef).not.toBeNull();
+    expect(rectRef.x).toBe(100);
+    expect(rectRef.y).toBe(75);
+    expect(typeof rectRef.setPosition).toBe("function");
+  });
 });

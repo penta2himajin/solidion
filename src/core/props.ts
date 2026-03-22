@@ -84,6 +84,66 @@ export function reapplyProp(
 /**
  * Low-level setter: directly sets a property on a Phaser GameObject.
  */
+/**
+ * Explicit handlers for props that need special multi-arg setters
+ * or non-standard behavior. Everything else is resolved dynamically.
+ */
+const PROP_OVERRIDES: Record<string, (obj: any, value: any) => void> = {
+  // Origin: compound setter (setOrigin takes x, y)
+  origin: (obj, v) => obj.setOrigin?.(v),
+  originX: (obj, v) => obj.setOrigin?.(v, obj.originY ?? 0.5),
+  originY: (obj, v) => obj.setOrigin?.(obj.originX ?? 0.5, v),
+
+  // Size: compound setter (setSize takes w, h)
+  width: (obj, v) => obj.setSize ? obj.setSize(v, obj.height) : (obj.width = v),
+  height: (obj, v) => obj.setSize ? obj.setSize(obj.width, v) : (obj.height = v),
+
+  // Fill/stroke: compound setters
+  fillColor: (obj, v) => obj.setFillStyle?.(v, obj.fillAlpha ?? 1),
+  fillAlpha: (obj, v) => obj.setFillStyle?.(obj.fillColor, v),
+  strokeColor: (obj, v) => obj.setStrokeStyle?.(obj.lineWidth ?? 1, v, obj.strokeAlpha ?? 1),
+  lineWidth: (obj, v) => obj.setStrokeStyle?.(v, obj.strokeColor, obj.strokeAlpha ?? 1),
+
+  // Scale: uses setScale for uniform scaling
+  scale: (obj, v) => obj.setScale?.(v),
+
+  // Word wrap: compound object arg
+  wordWrap: (obj, v) => v && obj.setWordWrapWidth?.(v.width, v.useAdvancedWrap),
+
+  // Animation: delegates to play()
+  animation: (obj, v) => v && obj.play?.(v),
+
+  // Interactive: special toggle behavior
+  interactive: (obj, v) => {
+    if (v === true) obj.setInteractive?.();
+    else if (v === false && obj.input) obj.removeInteractive?.();
+    else if (v && typeof v === "object") obj.setInteractive?.(v);
+  },
+
+  // Texture: handled by texture system, skip here
+  texture: () => {},
+
+  // Internal props: skip
+  ref: () => {},
+  children: () => {},
+};
+
+/**
+ * Convert a prop name to its Phaser setter method name.
+ * e.g. "fontSize" → "setFontSize", "text" → "setText"
+ */
+function toSetterName(name: string): string {
+  return "set" + name.charAt(0).toUpperCase() + name.slice(1);
+}
+
+/**
+ * Low-level setter: sets a property on a Phaser GameObject.
+ *
+ * Resolution order:
+ * 1. PROP_OVERRIDES — explicit handlers for compound/special props
+ * 2. obj.set${PascalCase}(value) — Phaser setter methods
+ * 3. obj[name] = value — direct property assignment
+ */
 export function setPhaserProp(
   node: Phaser.GameObjects.GameObject,
   name: string,
@@ -91,195 +151,22 @@ export function setPhaserProp(
 ): void {
   const obj = node as any;
 
-  switch (name) {
-    // Transform
-    case "x":
-      obj.x = value;
-      break;
-    case "y":
-      obj.y = value;
-      break;
-    case "angle":
-      obj.angle = value;
-      break;
-    case "rotation":
-      obj.rotation = value;
-      break;
+  // 1. Check explicit overrides
+  const override = PROP_OVERRIDES[name];
+  if (override) {
+    override(obj, value);
+    return;
+  }
 
-    // Scale
-    case "scale":
-      if (typeof value === "number") {
-        obj.setScale(value);
-      }
-      break;
-    case "scaleX":
-      obj.scaleX = value;
-      break;
-    case "scaleY":
-      obj.scaleY = value;
-      break;
+  // 2. Try setter method: set${PascalCase}(value)
+  const setter = toSetterName(name);
+  if (typeof obj[setter] === "function") {
+    obj[setter](value);
+    return;
+  }
 
-    // Display
-    case "alpha":
-      obj.alpha = value;
-      break;
-    case "visible":
-      obj.visible = value;
-      break;
-    case "tint":
-      if (typeof obj.setTint === "function") {
-        obj.setTint(value);
-      }
-      break;
-    case "blendMode":
-      obj.blendMode = value;
-      break;
-    case "depth":
-      obj.depth = value;
-      break;
-
-    // Origin
-    case "origin":
-      if (typeof obj.setOrigin === "function") {
-        if (typeof value === "number") {
-          obj.setOrigin(value);
-        }
-      }
-      break;
-    case "originX":
-      if (typeof obj.setOrigin === "function") {
-        obj.setOrigin(value, obj.originY ?? 0.5);
-      }
-      break;
-    case "originY":
-      if (typeof obj.setOrigin === "function") {
-        obj.setOrigin(obj.originX ?? 0.5, value);
-      }
-      break;
-
-    // Size
-    case "width":
-      if (typeof obj.setSize === "function") {
-        obj.setSize(value, obj.height);
-      } else {
-        obj.width = value;
-      }
-      break;
-    case "height":
-      if (typeof obj.setSize === "function") {
-        obj.setSize(obj.width, value);
-      } else {
-        obj.height = value;
-      }
-      break;
-    case "displayWidth":
-      obj.displayWidth = value;
-      break;
-    case "displayHeight":
-      obj.displayHeight = value;
-      break;
-
-    // Texture (handled by texture system, but basic setter here)
-    case "texture":
-      // Texture loading is handled separately in texture.ts
-      break;
-    case "frame":
-      if (typeof obj.setFrame === "function") {
-        obj.setFrame(value);
-      }
-      break;
-
-    // Text-specific
-    case "text":
-      if (typeof obj.setText === "function") {
-        obj.setText(value);
-      }
-      break;
-    case "fontSize":
-      if (typeof obj.setFontSize === "function") {
-        obj.setFontSize(value);
-      }
-      break;
-    case "fontFamily":
-      if (typeof obj.setFontFamily === "function") {
-        obj.setFontFamily(value);
-      }
-      break;
-    case "color":
-      if (typeof obj.setColor === "function") {
-        obj.setColor(value);
-      }
-      break;
-    case "align":
-      if (typeof obj.setAlign === "function") {
-        obj.setAlign(value);
-      }
-      break;
-    case "style":
-      if (typeof obj.setStyle === "function") {
-        obj.setStyle(value);
-      }
-      break;
-    case "wordWrap":
-      if (typeof obj.setWordWrapWidth === "function" && value) {
-        obj.setWordWrapWidth(value.width, value.useAdvancedWrap);
-      }
-      break;
-
-    // Rectangle-specific
-    case "fillColor":
-      if (typeof obj.setFillStyle === "function") {
-        obj.setFillStyle(value, obj.fillAlpha ?? 1);
-      }
-      break;
-    case "fillAlpha":
-      if (typeof obj.setFillStyle === "function") {
-        obj.setFillStyle(obj.fillColor, value);
-      }
-      break;
-    case "strokeColor":
-      if (typeof obj.setStrokeStyle === "function") {
-        obj.setStrokeStyle(obj.lineWidth ?? 1, value, obj.strokeAlpha ?? 1);
-      }
-      break;
-    case "lineWidth":
-      if (typeof obj.setStrokeStyle === "function") {
-        obj.setStrokeStyle(value, obj.strokeColor, obj.strokeAlpha ?? 1);
-      }
-      break;
-
-    // Animation
-    case "animation":
-      if (typeof obj.play === "function") {
-        if (typeof value === "string") {
-          obj.play(value);
-        } else if (value) {
-          obj.play(value);
-        }
-      }
-      break;
-
-    // Interactive config
-    case "interactive":
-      if (value === true) {
-        obj.setInteractive();
-      } else if (value === false) {
-        if (obj.input) obj.removeInteractive();
-      } else if (value && typeof value === "object") {
-        obj.setInteractive(value);
-      }
-      break;
-
-    // Skip internal props
-    case "ref":
-    case "children":
-      break;
-
-    default:
-      // Fallback: try direct property assignment
-      if (name in obj) {
-        obj[name] = value;
-      }
-      break;
+  // 3. Direct property assignment
+  if (name in obj) {
+    obj[name] = value;
   }
 }
