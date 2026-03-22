@@ -11,6 +11,7 @@
 import {
   createSignal,
   createEffect,
+  createComponent,
   onCleanup,
   untrack,
   type JSX,
@@ -134,9 +135,26 @@ export function Game(props: GameProps): any {
       // Create a root container in the scene for the renderer
       const rootContainer = gameState.scene.add.container(0, 0);
 
-      // Render children via the universal renderer
+      // Render children via the universal renderer, wrapped in Context Providers
+      // so that useGame(), useScene(), and useFrame() work inside children.
       disposeRenderer = render(
-        () => props.children,
+        () =>
+          createComponent(GameContext.Provider, {
+            value: gameState.game,
+            get children() {
+              return createComponent(SceneContext.Provider, {
+                value: gameState.scene,
+                get children() {
+                  return createComponent(FrameManagerContext.Provider, {
+                    value: gameState.frameManager,
+                    get children() {
+                      return props.children;
+                    },
+                  });
+                },
+              });
+            },
+          }),
         rootContainer
       );
     });

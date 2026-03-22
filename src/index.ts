@@ -26,6 +26,10 @@ export { Scene, type SceneProps } from "./components/Scene";
 export { Preload, usePreload, type PreloadProps, type AssetSpec } from "./components/Preload";
 export { Overlay, type OverlayProps } from "./components/Overlay";
 
+// Control flow (Solidion versions — compatible with universal renderer)
+export { Show, type ShowProps } from "./components/Show";
+export { For, Index, type ForProps, type IndexProps } from "./components/For";
+
 // Contexts & accessors
 export { useGame, useScene, useParentNode } from "./contexts";
 
