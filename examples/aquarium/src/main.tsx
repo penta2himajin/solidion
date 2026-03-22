@@ -23,6 +23,7 @@ import { useTween } from "solidion/hooks/useTween";
 import { useSequence } from "solidion/hooks/useSequence";
 import { useFollow } from "solidion/hooks/useFollow";
 import { useVelocity } from "solidion/hooks/useVelocity";
+import { OscillateBehavior } from "solidion/behaviors";
 import * as debug from "solidion/debug";
 import Phaser from "phaser";
 
@@ -251,8 +252,14 @@ function Fry(props: { slot: number }) {
 function Jellyfish(props: { baseX: number; baseY: number }) {
   const [startled, setStartled] = createSignal(false);
 
+  // Slow drift (12s cycle for natural movement)
   const drift = useOscillation({
-    amplitude: { y: 40, x: 8 }, frequency: 0.2, phase: props.baseX * 0.01,
+    amplitude: { y: 30, x: 6 }, frequency: 0.08, phase: props.baseX * 0.01,
+  });
+
+  // Pulsing size (3 pulses per drift cycle ≈ 0.24 Hz)
+  const pulse = useOscillation({
+    amplitude: { x: 4, y: 3 }, frequency: 0.24, phase: props.baseX * 0.03,
   });
 
   const machine = useStateMachine<"drift" | "startled">({
@@ -271,17 +278,22 @@ function Jellyfish(props: { baseX: number; baseY: number }) {
 
   const jx = () => props.baseX + (startled() ? 0 : drift().x);
   const jy = () => props.baseY + (startled() ? -10 : drift().y);
+  // Bell size pulses (breathing) — contracts when startled
+  const bellW = () => startled() ? 24 : 30 + pulse().x;
+  const bellH = () => startled() ? 18 : 24 + pulse().y;
 
   return (
     <>
-      <ellipse x={jx()} y={jy()} width={30} height={24}
+      {/* Bell — size pulsing creates breathing animation */}
+      <ellipse x={jx()} y={jy()} width={bellW()} height={bellH()}
         fillColor={0xcc88ff} origin={0.5} depth={8}
         alpha={startled() ? 0.4 : 0.6} onClick={startle} />
-      <rectangle x={jx() - 6} y={jy() + 18} width={2} height={16}
+      {/* Tentacles — attached to bottom of bell */}
+      <rectangle x={jx() - 6} y={jy() + bellH() / 2 + 8} width={2} height={16}
         fillColor={0xbb77ee} origin={0.5} depth={7} alpha={0.4} />
-      <rectangle x={jx()} y={jy() + 20} width={2} height={20}
+      <rectangle x={jx()} y={jy() + bellH() / 2 + 10} width={2} height={20}
         fillColor={0xbb77ee} origin={0.5} depth={7} alpha={0.4} />
-      <rectangle x={jx() + 6} y={jy() + 18} width={2} height={16}
+      <rectangle x={jx() + 6} y={jy() + bellH() / 2 + 8} width={2} height={16}
         fillColor={0xbb77ee} origin={0.5} depth={7} alpha={0.4} />
     </>
   );
