@@ -63,3 +63,6 @@ export { pushScene, popScene, getCurrentScene } from "./core/scene-stack";
 export { composeProp, applyProp, reapplyProp, setPhaserProp } from "./core/props";
 export { createFrameManager, type FrameManager } from "./core/frame";
 export { solidionFrameUpdate } from "./core/sync";
+
+// Debug utilities
+export * as debug from "./debug";

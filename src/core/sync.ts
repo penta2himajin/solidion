@@ -19,13 +19,16 @@
 
 import { batch } from "solid-js";
 import type { FrameManager } from "./frame";
+import { frameStart, frameEnd } from "../debug";
 
 export function solidionFrameUpdate(
   frameManager: FrameManager,
   time: number,
   delta: number
 ): void {
+  frameStart();
   batch(() => {
     frameManager.update(time, delta);
   });
+  frameEnd();
 }

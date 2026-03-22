@@ -3,7 +3,9 @@
  * with support for behavior delta composition.
  */
 
+import { getOwner } from "solid-js";
 import { getMeta } from "./meta";
+import { recordBinding } from "../debug";
 
 /**
  * Property composition categories.
@@ -57,6 +59,9 @@ export function applyProp(
 ): void {
   const meta = getMeta(node);
   meta.baseValues.set(name, value);
+
+  // Track reactive vs static bindings for debug.inspectBindings()
+  recordBinding(node, name, !!getOwner());
 
   const delta = meta.totalDelta[name] ?? 0;
   const finalValue = composeProp(name, value, delta);

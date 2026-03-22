@@ -11,6 +11,7 @@ import { getMeta, deleteMeta } from "./core/meta";
 import { isEventProp, resolveEventName } from "./core/events";
 import { applyProp } from "./core/props";
 import { applyTexture } from "./core/texture";
+import * as debugModule from "./debug";
 
 /**
  * Lightweight text node representation.
@@ -99,6 +100,8 @@ function _createTextNode(value: string): SolidionTextNode {
  * Set a property or event on a node.
  */
 function setProperty(node: any, name: string, value: any): void {
+  debugModule.recordSetProperty();
+
   if (isTextNode(node)) {
     // Text nodes only store their value
     node.value = value;
