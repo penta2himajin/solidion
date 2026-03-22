@@ -183,17 +183,15 @@ function Fish(props: { slot: number; onSelect: (s: number) => void }) {
 
   return (
     <Show when={active()}>
-      <rectangle x={fx()} y={fy()} width={40 * s()} height={28 * s()}
+      {/* Hit area uses sz() not s() — always full size, not affected by pop-in */}
+      <rectangle x={fx()} y={fy()} width={40 * sz()} height={28 * sz()}
         fillColor={0x000000} origin={0.5} depth={13} alpha={0.001}
         onClick={() => props.onSelect(i)} />
       <sprite x={fx()} y={fy()} texture={tex()}
         origin={0.5} depth={10}
         scaleX={dir() * s() * 2} scaleY={s() * 2}
         alpha={sleeping() ? 0.5 : 1} />
-      <rectangle x={fx() - dir() * 18 * s()} y={fy()}
-        width={10 * s()} height={12 * s()}
-        fillColor={color()} origin={0.5} depth={9} alpha={sleeping() ? 0.4 : 0.8} />
-      <ellipse x={fx() + dir() * 8 * s()} y={fy() - 2 * s()}
+<ellipse x={fx() + dir() * 8 * s()} y={fy() - 2 * s()}
         width={5 * s()}
         height={(sleeping() || feedSeq.current() === "munch") ? 1 * s() : 5 * s()}
         fillColor={0xffffff} origin={0.5} depth={11} />
