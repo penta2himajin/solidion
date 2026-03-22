@@ -334,7 +334,7 @@ function App() {
 
   // ── Ghost AI: choose direction ──
   function chooseDir(gs: GhostState, targetC: number, targetR: number): number {
-    let bestDir = gs.dir;
+    let bestDir = -1;
     let bestDist = Infinity;
     const reverse = (gs.dir + 2) % 4;
 
@@ -343,9 +343,16 @@ function App() {
       const nc = wrapC(gs.col + DX[d]);
       const nr = gs.row + DY[d];
       if (!canMove(maze.walls, nc, nr)) continue;
-      if (MAZE_STR[nr]?.[nc] === "-" && gs.mode !== "eaten") continue;
+      if (MAZE_STR[nr]?.[nc] === "-" && gs.mode !== "eaten" && gs.row <= 9) continue;
       const dist = distSq(nc, nr, targetC, targetR);
       if (dist < bestDist) { bestDist = dist; bestDir = d; }
+    }
+    // Fallback: if all non-reverse directions blocked, allow reverse
+    if (bestDir === -1) {
+      if (canMove(maze.walls, wrapC(gs.col + DX[reverse]), gs.row + DY[reverse])) {
+        return reverse;
+      }
+      return gs.dir; // truly stuck (shouldn't happen in a valid maze)
     }
     return bestDir;
   }
@@ -410,13 +417,28 @@ function App() {
     setTimeout(() => setPowVisible(false), 1200);
   }
 
+  function reverseGhostDir(gs: GhostState) {
+    gs.dir = (gs.dir + 2) % 4;
+    if (gs.progress > 0) gs.progress = 1 - gs.progress;
+    // If reversed direction leads to a wall, find first valid direction and stop
+    if (!canMove(maze.walls, wrapC(gs.col + DX[gs.dir]), gs.row + DY[gs.dir])) {
+      gs.progress = 0;
+      for (let d = 0; d < 4; d++) {
+        if (canMove(maze.walls, wrapC(gs.col + DX[d]), gs.row + DY[d])) {
+          gs.dir = d;
+          break;
+        }
+      }
+    }
+  }
+
   function activateFrightened() {
     frightActive = true;
     frightTimer = FRIGHT_DURATION;
     for (const gs of ghostStates) {
       if (gs.mode !== "eaten") {
         gs.mode = "frightened";
-        gs.dir = (gs.dir + 2) % 4;
+        reverseGhostDir(gs);
       }
     }
   }
@@ -457,7 +479,7 @@ function App() {
         for (const gs of ghostStates) {
           if (gs.mode !== "eaten") {
             gs.mode = nextMode;
-            gs.dir = (gs.dir + 2) % 4;
+            reverseGhostDir(gs);
           }
         }
       }
@@ -551,8 +573,15 @@ function App() {
 
       if (gs.progress >= 1) {
         gs.progress -= 1;
-        gs.col = wrapC(gs.col + DX[gs.dir]);
-        gs.row = gs.row + DY[gs.dir];
+        // Validate before moving (direction may have been reversed into a wall)
+        const moveCol = wrapC(gs.col + DX[gs.dir]);
+        const moveRow = gs.row + DY[gs.dir];
+        if (canMove(maze.walls, moveCol, moveRow)) {
+          gs.col = moveCol;
+          gs.row = moveRow;
+        } else {
+          gs.progress = 0;
+        }
 
         // Choose next direction at intersection
         let target: [number, number];
@@ -565,17 +594,23 @@ function App() {
           if (gs.col === ghostHomeCenter[0] && gs.row === ghostHomeCenter[1]) {
             const [curMode] = MODE_SEQUENCE[modePhaseIdx];
             gs.mode = frightActive ? "frightened" : curMode;
+            // Re-evaluate target after mode change
+            if (gs.mode === "chase") target = getChaseTarget(gs, i);
+            else if (gs.mode === "scatter") target = GHOSTS[i].scatterTarget as [number, number];
           }
         } else {
-          // Frightened: random
+          // Frightened: random (allow reverse as last resort)
+          const reverse = (gs.dir + 2) % 4;
           const dirs = [0, 1, 2, 3].filter(d => {
-            if (d === (gs.dir + 2) % 4) return false;
+            if (d === reverse) return false;
             const nc = wrapC(gs.col + DX[d]);
             const nr = gs.row + DY[d];
             return canMove(maze.walls, nc, nr);
           });
           if (dirs.length > 0) {
             gs.dir = dirs[Math.floor(Math.random() * dirs.length)];
+          } else if (canMove(maze.walls, wrapC(gs.col + DX[reverse]), gs.row + DY[reverse])) {
+            gs.dir = reverse;
           }
           target = [gs.col + DX[gs.dir], gs.row + DY[gs.dir]];
         }
