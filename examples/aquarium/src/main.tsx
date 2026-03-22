@@ -19,6 +19,7 @@ import { useStateMachine } from "solidion/hooks/useStateMachine";
 import { useSpring } from "solidion/hooks/useSpring";
 import { useOscillation } from "solidion/hooks/useOscillation";
 import { useTween } from "solidion/hooks/useTween";
+import { useSequence } from "solidion/hooks/useSequence";
 import Phaser from "phaser";
 
 const ASSETS = [
@@ -114,6 +115,14 @@ function Fish(props: { slot: number; onSelect: (s: number) => void }) {
     playing: () => active(),
   });
 
+  // Feeding sequence: approach → eat → satisfied
+  const [eating, setEating] = createSignal(false);
+  const feedSeq = useSequence([
+    { action: "approach", duration: 800, onStart: () => setEating(true) },
+    { action: "munch", duration: 400 },
+    { action: "satisfied", duration: 600, onStart: () => setEating(false) },
+  ]);
+
   const machine = useStateMachine<"idle" | "swim" | "eat" | "sleep">({
     initial: "idle",
     states: {
@@ -132,7 +141,7 @@ function Fish(props: { slot: number; onSelect: (s: number) => void }) {
           setDir(tx > spring().x ? 1 : -1);
         },
       },
-      eat: { duration: 3000, onComplete: "idle" },
+      eat: { duration: 2500, onComplete: "idle", onEnter: () => feedSeq.play() },
       sleep: {
         duration: 5000 + Math.random() * 3000, onComplete: "idle",
         on: { WAKE: "idle" },
@@ -184,10 +193,12 @@ function Fish(props: { slot: number; onSelect: (s: number) => void }) {
         width={10 * s()} height={12 * s()}
         fillColor={color()} origin={0.5} depth={9} alpha={sleeping() ? 0.4 : 0.8} />
       <ellipse x={fx() + dir() * 8 * s()} y={fy() - 2 * s()}
-        width={5 * s()} height={sleeping() ? 1 * s() : 5 * s()}
+        width={5 * s()}
+        height={(sleeping() || feedSeq.current() === "munch") ? 1 * s() : 5 * s()}
         fillColor={0xffffff} origin={0.5} depth={11} />
       <ellipse x={fx() + dir() * 9 * s()} y={fy() - 2 * s()}
-        width={2.5 * s()} height={sleeping() ? 0.5 * s() : 2.5 * s()}
+        width={2.5 * s()}
+        height={(sleeping() || feedSeq.current() === "munch") ? 0.5 * s() : 2.5 * s()}
         fillColor={0x111111} origin={0.5} depth={12} />
     </Show>
   );
