@@ -120,7 +120,18 @@ function setProperty(node: any, name: string, value: any): void {
 
     if (value) {
       if (!node.input && typeof node.setInteractive === "function") {
-        node.setInteractive();
+        // Defer setInteractive() to after all synchronous props (including
+        // width/height in effects) are applied. Without this, setInteractive()
+        // on a 0x0 shape creates a hit area that rejects all clicks.
+        if (!meta.interactivePending) {
+          meta.interactivePending = true;
+          queueMicrotask(() => {
+            if (meta.interactivePending && !node.input && typeof node.setInteractive === "function") {
+              node.setInteractive();
+            }
+            meta.interactivePending = false;
+          });
+        }
       }
       node.on(event, value);
       meta.handlers.set(name, value);
@@ -256,6 +267,9 @@ function cleanupNode(node: any): void {
   if (!node) return;
 
   const meta = getMeta(node);
+
+  // Cancel any pending setInteractive microtask
+  meta.interactivePending = false;
 
   // Remove all event listeners
   for (const [name, handler] of meta.handlers) {

@@ -16,6 +16,8 @@ export interface SolidionMeta {
   behaviorDeltas: Map<string, Record<string, number>>;
   /** Aggregated deltas (cache) */
   totalDelta: Record<string, number>;
+  /** Whether setInteractive() is queued via microtask */
+  interactivePending: boolean;
 }
 
 export function createMeta(): SolidionMeta {
@@ -25,6 +27,7 @@ export function createMeta(): SolidionMeta {
     baseValues: new Map(),
     behaviorDeltas: new Map(),
     totalDelta: {},
+    interactivePending: false,
   };
 }
 
