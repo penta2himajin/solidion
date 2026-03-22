@@ -32,18 +32,37 @@ import {
 
 import { createRoot, createSignal } from "solid-js";
 
-// Set up minimal Phaser global so instanceof checks work correctly.
-// MockContainer will extend this class so `instanceof Phaser.GameObjects.Container` passes.
+// Set up minimal Phaser global so instanceof checks AND `new Phaser.GameObjects.XXX()`
+// in ELEMENT_OVERRIDES work correctly.
 class PhaserContainerBase {
   list: any[] = [];
   add(_child: any) {}
   remove(_child: any) {}
 }
 
+/**
+ * Helper: create a Phaser GameObjects constructor that returns a MockGameObject-like
+ * instance with the given scene attached. This mirrors what `new Phaser.GameObjects.XXX(scene, ...)`
+ * does in ELEMENT_OVERRIDES.
+ */
+function makeMockConstructor(BaseCtor: new () => MockGameObject = MockGameObject) {
+  return function (this: any, scene: any, ..._args: any[]) {
+    const obj = new BaseCtor();
+    obj.scene = scene;
+    return obj;
+  } as any;
+}
+
 if (typeof globalThis.Phaser === "undefined") {
   (globalThis as any).Phaser = {
     GameObjects: {
       Container: PhaserContainerBase,
+      Rectangle: makeMockConstructor(MockRectangle),
+      Ellipse: makeMockConstructor(),
+      Arc: makeMockConstructor(),
+      Star: makeMockConstructor(),
+      Triangle: makeMockConstructor(),
+      Text: makeMockConstructor(MockText),
     },
   };
 }
@@ -54,79 +73,46 @@ Object.setPrototypeOf(MockContainer.prototype, PhaserContainerBase.prototype);
 
 // ---- Extended MockScene with factory methods for createElement ----
 
+/**
+ * Extended MockScene with:
+ * - scene.make[type]() factories (GameObjectCreator — no displayList add)
+ * - scene.add[type]() factories (GameObjectFactory — adds to displayList)
+ *
+ * ELEMENT_OVERRIDES now use `new Phaser.GameObjects.XXX()` directly, so the
+ * scene.add factories for those types are no longer exercised by createElement.
+ * The dynamic factory path tries scene.make first, then scene.add as fallback.
+ */
 class RendererMockScene extends MockScene {
+  make = {
+    sprite: (_config: any) => {
+      const obj = new MockSprite();
+      obj.scene = this as any;
+      return obj;
+    },
+    image: (_config: any) => {
+      const obj = new MockGameObject() as any;
+      obj.texture = { key: "" };
+      obj.setTexture = (key: string) => { obj.texture.key = key; };
+      obj.scene = this as any;
+      return obj;
+    },
+    container: (_config: any) => {
+      const obj = new MockContainer();
+      obj.scene = this as any;
+      return obj;
+    },
+  } as any;
+
   override add = {
     existing: (obj: MockGameObject) => {
       obj.scene = this as any;
       this.sys.displayList.add(obj);
       return obj;
     },
-    rectangle: (_x: number, _y: number, _w: number, _h: number, _color: number) => {
-      const obj = new MockRectangle();
-      obj.scene = this as any;
-      this.sys.displayList.add(obj);
-      return obj;
-    },
-    circle: (_x: number, _y: number, _r: number, _color: number) => {
+    polygon: (_x: number, _y: number) => {
       const obj = new MockGameObject();
       obj.scene = this as any;
       this.sys.displayList.add(obj);
-      return obj;
-    },
-    ellipse: (_x: number, _y: number, _w: number, _h: number, _color: number) => {
-      const obj = new MockGameObject();
-      obj.scene = this as any;
-      this.sys.displayList.add(obj);
-      return obj;
-    },
-    arc: (_x: number, _y: number, _r: number, _sa: number, _ea: number, _cc: boolean, _color: number) => {
-      const obj = new MockGameObject();
-      obj.scene = this as any;
-      this.sys.displayList.add(obj);
-      return obj;
-    },
-    star: (_x: number, _y: number, _points: number, _ir: number, _or: number, _color: number) => {
-      const obj = new MockGameObject();
-      obj.scene = this as any;
-      this.sys.displayList.add(obj);
-      return obj;
-    },
-    triangle: (_x: number, _y: number, _x1: number, _y1: number, _x2: number, _y2: number, _x3: number, _y3: number, _color: number) => {
-      const obj = new MockGameObject();
-      obj.scene = this as any;
-      this.sys.displayList.add(obj);
-      return obj;
-    },
-    polygon: (_x: number, _y: number, _points: number[], _color: number) => {
-      const obj = new MockGameObject();
-      obj.scene = this as any;
-      this.sys.displayList.add(obj);
-      return obj;
-    },
-    text: (_x: number, _y: number, _text: string, _style: any) => {
-      const obj = new MockText();
-      obj.scene = this as any;
-      this.sys.displayList.add(obj);
-      return obj;
-    },
-    sprite: (_x: number, _y: number) => {
-      const obj = new MockSprite();
-      obj.scene = this as any;
-      this.sys.displayList.add(obj);
-      return obj;
-    },
-    image: (_x: number, _y: number) => {
-      const obj = new MockGameObject();
-      (obj as any).texture = { key: "" };
-      (obj as any).setTexture = (key: string) => { (obj as any).texture.key = key; };
-      obj.scene = this as any;
-      this.sys.displayList.add(obj);
-      return obj;
-    },
-    container: (_x: number, _y: number) => {
-      const obj = new MockContainer();
-      obj.scene = this as any;
-      this.sys.displayList.add(obj as any);
       return obj;
     },
   } as any;
@@ -405,7 +391,7 @@ describe("Renderer Exports (renderer.ts coverage)", () => {
       expect(node).toBeDefined();
     });
 
-    it("creates a polygon via ELEMENT_OVERRIDES", () => {
+    it("creates a polygon via scene.add[type]() dynamic factory (not in overrides or make)", () => {
       const node = createElement("polygon");
       expect(node).toBeDefined();
     });
@@ -416,18 +402,18 @@ describe("Renderer Exports (renderer.ts coverage)", () => {
       expect(hasMeta(node)).toBe(true);
     });
 
-    it("creates a sprite via scene.add[type]() dynamic factory", () => {
+    it("creates a sprite via scene.make[type]() dynamic factory", () => {
       const node = createElement("sprite");
       expect(node).toBeDefined();
       expect(hasMeta(node)).toBe(true);
     });
 
-    it("creates an image via scene.add[type]() dynamic factory", () => {
+    it("creates an image via scene.make[type]() dynamic factory", () => {
       const node = createElement("image");
       expect(node).toBeDefined();
     });
 
-    it("creates a container via scene.add[type]() dynamic factory", () => {
+    it("creates a container via scene.make[type]() dynamic factory", () => {
       const node = createElement("container");
       expect(node).toBeDefined();
     });
@@ -445,16 +431,16 @@ describe("Renderer Exports (renderer.ts coverage)", () => {
       );
     });
 
-    it("throws for type not in overrides or scene.add", () => {
-      // Remove all dynamic factories from scene.add except the ones we need
-      // Use a scene with limited factories
+    it("throws for type not in overrides, scene.make, or scene.add", () => {
+      // Use a scene with no make/add factories for "nonexistent"
       resetSceneStack();
-      const limitedScene = new MockScene(); // MockScene has no factory methods beyond 'existing'
+      const limitedScene = new MockScene(); // MockScene has no make property and limited add
+      (limitedScene as any).make = {}; // empty make so scene.make[type] is undefined
       pushScene(limitedScene as any);
 
-      // "sprite" is not in ELEMENT_OVERRIDES and MockScene.add doesn't have "sprite"
-      expect(() => createElement("sprite")).toThrow(
-        /Unknown element type "sprite"/
+      // "nonexistent_abc" is not in ELEMENT_OVERRIDES, scene.make, or scene.add
+      expect(() => createElement("nonexistent_abc")).toThrow(
+        /Unknown element type "nonexistent_abc"/
       );
     });
   });

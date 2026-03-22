@@ -126,17 +126,19 @@ describe("Texture System", () => {
 
       applyTexture(sprite as any, "/assets/bg.png");
       expect(sprite.texture.key).toBe("/assets/bg.png");
-      expect(sprite.visible).toBe(true);
+      // visible is NOT changed by applyTexture — controlled by the component
+      expect(sprite.visible).toBe(false);
     });
 
-    it("hides sprite and loads uncached texture, shows on complete", async () => {
+    it("loads uncached texture and applies on complete (no visibility change)", async () => {
       const scene = new MockScene();
       const sprite = new MockSprite();
       sprite.scene = scene as any;
       sprite.visible = true;
 
       applyTexture(sprite as any, "/assets/new.png");
-      expect(sprite.visible).toBe(false);
+      // visible is NOT changed by applyTexture
+      expect(sprite.visible).toBe(true);
 
       // Simulate load complete
       scene.load.fireComplete("image", "/assets/new.png");
@@ -144,6 +146,7 @@ describe("Texture System", () => {
       // Wait for promise microtask
       await new Promise((r) => setTimeout(r, 0));
       expect(sprite.texture.key).toBe("/assets/new.png");
+      // visible remains unchanged
       expect(sprite.visible).toBe(true);
     });
 
@@ -197,17 +200,19 @@ describe("Texture System", () => {
       const scene = new MockScene();
       const sprite = new MockSprite();
       sprite.scene = scene as any;
+      sprite.visible = true;
 
       applyTexture(sprite as any, "/assets/fail.png");
-      expect(sprite.visible).toBe(false);
+      // visible is NOT changed by applyTexture
+      expect(sprite.visible).toBe(true);
 
       // Simulate load error for this key
       const errorListener = (scene.load as any).listeners.get("loaderror");
       errorListener?.({ key: "/assets/fail.png" });
 
       await new Promise((r) => setTimeout(r, 0));
-      // Should remain invisible after failure
-      expect(sprite.visible).toBe(false);
+      // visible remains unchanged after failure
+      expect(sprite.visible).toBe(true);
     });
   });
 
