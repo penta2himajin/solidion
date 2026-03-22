@@ -1,31 +1,34 @@
 /**
  * <Preload> component (L2).
  *
- * Loads assets before rendering children. Shows fallback during loading.
- * Children mount only after all assets are cached, so texture references
- * resolve synchronously via the fast path.
+ * Loads assets before showing children. Uses Solidion's <Show> internally
+ * to toggle visibility between fallback (loading) and children (loaded).
+ *
+ * Both fallback and children are rendered at mount time. Children's sprites
+ * are created while textures are still loading, but they're hidden via
+ * <Show when={loaded()}>. By the time Show reveals them, textures are
+ * cached and sprites display correctly.
  *
  * Usage:
  * ```tsx
  * <Preload
- *   assets={[
- *     "/assets/bg.png",
- *     { type: "atlas", key: "chars", image: "/assets/chars.png", json: "/assets/chars.json" },
- *   ]}
+ *   assets={["/assets/bg.png", "/assets/fish.png"]}
  *   fallback={<text text="Loading..." x={400} y={300} />}
  * >
- *   <sprite texture="chars:idle" />
+ *   <sprite texture="/assets/bg.png" />
  * </Preload>
  * ```
  */
 
 import {
   createSignal,
+  createEffect,
   onMount,
   type JSX,
 } from "solid-js";
 import { preloadAssets } from "../core/texture";
 import { getCurrentScene } from "../core/scene-stack";
+import { setVisibleRecursive } from "../core/visibility";
 
 export type AssetSpec =
   | string
@@ -54,15 +57,25 @@ export function Preload(props: PreloadProps): any {
       setLoaded(true);
     }).catch((err) => {
       console.error("Solidion: Preload failed:", err);
-      setLoaded(true); // Allow children to mount even on failure
+      setLoaded(true);
     });
   });
 
-  // Return children when loaded, fallback otherwise
-  // Note: In the universal renderer context, conditional rendering
-  // needs to be handled by the caller using <Show> or similar.
-  // This component provides the loaded() signal for that pattern.
-  return () => loaded() ? props.children : (props.fallback ?? null);
+  // Render both fallback and children, toggle visibility directly.
+  // Avoids createComponent(Show) which has reactivity issues in .ts files.
+  const children = props.children;
+  const fallback = props.fallback;
+
+  createEffect(() => {
+    const isLoaded = loaded();
+    setVisibleRecursive(children, isLoaded);
+    if (fallback) setVisibleRecursive(fallback, !isLoaded);
+  });
+
+  const result: any[] = [];
+  if (fallback) result.push(fallback);
+  result.push(children);
+  return result;
 }
 
 /**

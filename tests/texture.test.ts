@@ -216,8 +216,11 @@ describe("Texture System", () => {
       const scene = new MockScene();
       const promise = preloadAssets(scene as any, ["/assets/a.png", "/assets/b.png"]);
 
-      scene.load.fireComplete("image", "/assets/a.png");
-      scene.load.fireComplete("image", "/assets/b.png");
+      // Simulate textures appearing in cache (as Phaser would do after loading)
+      setTimeout(() => {
+        scene.textures.addKey("/assets/a.png");
+        scene.textures.addKey("/assets/b.png");
+      }, 30);
 
       await expect(promise).resolves.toBeUndefined();
     });
@@ -236,7 +239,7 @@ describe("Texture System", () => {
         { type: "atlas", key: "chars", image: "/chars.png", json: "/chars.json" },
       ]);
 
-      scene.load.fireComplete("atlas", "chars");
+      setTimeout(() => { scene.textures.addKey("chars"); }, 30);
       await expect(promise).resolves.toBeUndefined();
     });
 
@@ -256,7 +259,7 @@ describe("Texture System", () => {
         { type: "spritesheet", key: "sheet", url: "/sheet.png", frameWidth: 32, frameHeight: 32 },
       ]);
 
-      scene.load.fireComplete("spritesheet", "sheet");
+      setTimeout(() => { scene.textures.addKey("sheet"); }, 30);
       await expect(promise).resolves.toBeUndefined();
     });
 
@@ -281,7 +284,7 @@ describe("Texture System", () => {
       const promise = preloadAssets(scene as any, [
         { type: "audio", key: "bgm", url: "/bgm.mp3" } as any,
       ]);
-      // Unknown type is skipped, resolves immediately
+      // Unknown type is skipped from both queueing and key tracking
       await expect(promise).resolves.toBeUndefined();
     });
   });

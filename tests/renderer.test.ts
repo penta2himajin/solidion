@@ -73,6 +73,12 @@ class RendererMockScene extends MockScene {
       this.sys.displayList.add(obj);
       return obj;
     },
+    ellipse: (_x: number, _y: number, _w: number, _h: number, _color: number) => {
+      const obj = new MockGameObject();
+      obj.scene = this as any;
+      this.sys.displayList.add(obj);
+      return obj;
+    },
     arc: (_x: number, _y: number, _r: number, _sa: number, _ea: number, _cc: boolean, _color: number) => {
       const obj = new MockGameObject();
       obj.scene = this as any;
@@ -373,7 +379,7 @@ describe("Renderer Exports (renderer.ts coverage)", () => {
       expect(hasMeta(node)).toBe(true);
     });
 
-    it("creates an ellipse via ELEMENT_OVERRIDES (maps to circle)", () => {
+    it("creates an ellipse via ELEMENT_OVERRIDES", () => {
       const node = createElement("ellipse");
       expect(node).toBeDefined();
       expect(hasMeta(node)).toBe(true);

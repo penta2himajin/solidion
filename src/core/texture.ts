@@ -123,43 +123,83 @@ export function applyTexture(
 
 /**
  * Preload a list of assets. Returns a promise that resolves when all are loaded.
+ * Queues all assets first, then starts the loader once.
  */
 export function preloadAssets(
   scene: Phaser.Scene,
   assets: (string | { type: string; key: string; [k: string]: any })[]
 ): Promise<void> {
-  const promises: Promise<void>[] = [];
+  let needsLoad = false;
+  const pendingKeys: { key: string; type: string }[] = [];
 
   for (const asset of assets) {
     if (typeof asset === "string") {
-      // Simple image URL
       const key = urlToKey(asset);
-      const result = ensureTexture(scene, key, asset);
-      if (result.promise) {
-        promises.push(result.promise);
+      if (!scene.textures.exists(key) && !loadingTextures.has(key)) {
+        scene.load.image(key, asset);
+        pendingKeys.push({ key, type: "image" });
+        needsLoad = true;
       }
     } else if (asset.type === "atlas") {
       const { key, image, json } = asset as any;
       if (!scene.textures.exists(key)) {
-        const promise = new Promise<void>((resolve) => {
-          scene.load.atlas(key, image, json);
-          scene.load.once(`filecomplete-atlas-${key}`, () => resolve());
-          scene.load.start();
-        });
-        promises.push(promise);
+        scene.load.atlas(key, image, json);
+        pendingKeys.push({ key, type: "atlas" });
+        needsLoad = true;
       }
     } else if (asset.type === "spritesheet") {
       const { key, url, frameWidth, frameHeight } = asset as any;
       if (!scene.textures.exists(key)) {
-        const promise = new Promise<void>((resolve) => {
-          scene.load.spritesheet(key, url, { frameWidth, frameHeight });
-          scene.load.once(`filecomplete-spritesheet-${key}`, () => resolve());
-          scene.load.start();
-        });
-        promises.push(promise);
+        scene.load.spritesheet(key, url, { frameWidth, frameHeight });
+        pendingKeys.push({ key, type: "spritesheet" });
+        needsLoad = true;
       }
     }
   }
 
-  return Promise.all(promises).then(() => {});
+  // Collect keys for recognized asset types only
+  const allKeys: string[] = [];
+  for (const asset of assets) {
+    if (typeof asset === "string") {
+      const key = urlToKey(asset);
+      if (!scene.textures.exists(key)) allKeys.push(key);
+    } else if (asset.type === "atlas" || asset.type === "spritesheet") {
+      const key = (asset as any).key;
+      if (!scene.textures.exists(key)) allKeys.push(key);
+    }
+    // Unknown asset types are silently skipped
+  }
+
+  if (allKeys.length === 0) {
+    return Promise.resolve();
+  }
+
+  // Start loader if we queued new files.
+  // Note: start() is a no-op if the loader is already running (LOADING state).
+  // Files queued during LOADING will be picked up when the loader restarts.
+  if (needsLoad) {
+    scene.load.start();
+  }
+
+  // Poll for texture cache presence instead of relying on loader events.
+  // This avoids race conditions between auto-load (applyTexture) and preload
+  // when both call scene.load.start() — Phaser's loader ignores start()
+  // if already in LOADING state, causing event listeners to miss completion.
+  return new Promise<void>((resolve) => {
+    function check() {
+      if (allKeys.every(k => scene.textures.exists(k))) {
+        for (const key of allKeys) {
+          loadingTextures.delete(key);
+        }
+        resolve();
+      } else {
+        // Retry starting in case previous batch completed and loader is idle now
+        if (needsLoad) {
+          scene.load.start();
+        }
+        setTimeout(check, 50);
+      }
+    }
+    setTimeout(check, 50);
+  });
 }
