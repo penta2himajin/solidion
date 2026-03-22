@@ -21,6 +21,7 @@ import { Game } from "solidion/components/Game";
 import { GameLoop } from "solidion/components/GameLoop";
 import { Show } from "solidion/components/Show";
 import { useScene } from "solidion/contexts";
+import { useOverlap } from "solidion/hooks/useOverlap";
 
 // ============================================================
 // Constants
@@ -282,6 +283,7 @@ function App() {
   let pCol = maze.playerStart[0], pRow = maze.playerStart[1];
   let pDir = 0, pNextDir = 0;
   let pProgress = 0;
+  const playerPos = { lerpC: pCol, lerpR: pRow };
 
   // Ghost state
   type GhostMode = "chase" | "scatter" | "frightened" | "eaten";
@@ -291,6 +293,7 @@ function App() {
     mode: GhostMode;
     homeCol: number; homeRow: number;
     startDelay: number;
+    lerpC: number; lerpR: number;
   }
 
   const ghostStates: GhostState[] = [];
@@ -316,6 +319,7 @@ function App() {
       progress: 0, mode: "scatter",
       homeCol: homePos[0], homeRow: homePos[1],
       startDelay: i * 3000,
+      lerpC: homePos[0], lerpR: homePos[1],
     });
   }
 
@@ -372,6 +376,7 @@ function App() {
       gs.col = hp[0]; gs.row = hp[1]; gs.dir = 3;
       gs.progress = 0; gs.mode = "scatter";
       gs.startDelay = i * 3000;
+      gs.lerpC = hp[0]; gs.lerpR = hp[1];
     }
     modeTimer = 0; modePhaseIdx = 0;
     frightTimer = 0; frightActive = false;
@@ -414,6 +419,26 @@ function App() {
         gs.dir = (gs.dir + 2) % 4;
       }
     }
+  }
+
+  // ── Ghost-Player overlap detection (useOverlap — L1a) ──
+  function GhostPlayerCollision() {
+    useOverlap({
+      sources: () => ghostStates,
+      targets: () => [playerPos],
+      getPosition: (item: any) => ({ x: item.lerpC, y: item.lerpR }),
+      threshold: 0.8,
+      mode: "all",
+      onOverlap: (gs: GhostState) => {
+        if (gs.mode === "frightened") {
+          gs.mode = "eaten";
+          setScore(s => s + 200);
+        } else if (gs.mode !== "eaten") {
+          playerDeath();
+        }
+      },
+    });
+    return null;
   }
 
   // ── Game loop ──
@@ -494,9 +519,11 @@ function App() {
       }
     }
 
-    // Update player visual
+    // Update player visual + interpolated position for overlap
     const pLerpC = pCol + DX[pDir] * pProgress;
     const pLerpR = pRow + DY[pDir] * pProgress;
+    playerPos.lerpC = pLerpC;
+    playerPos.lerpR = pLerpR;
     const [ppx, ppy] = tileToPixel(pLerpC, pLerpR);
     setPlayerX(ppx);
     setPlayerY(ppy);
@@ -509,6 +536,7 @@ function App() {
       // Start delay
       if (gs.startDelay > 0) {
         gs.startDelay -= delta;
+        gs.lerpC = gs.col; gs.lerpR = gs.row;
         const [gx, gy] = tileToPixel(gs.col, gs.row);
         ghostSignals[i].x[1](gx);
         ghostSignals[i].y[1](gy);
@@ -564,27 +592,16 @@ function App() {
         }
       }
 
-      // Render ghost
-      const gLerpC = gs.col + DX[gs.dir] * gs.progress;
-      const gLerpR = gs.row + DY[gs.dir] * gs.progress;
-      const [gx, gy] = tileToPixel(gLerpC, gLerpR);
+      // Render ghost + update interpolated position for overlap
+      gs.lerpC = gs.col + DX[gs.dir] * gs.progress;
+      gs.lerpR = gs.row + DY[gs.dir] * gs.progress;
+      const [gx, gy] = tileToPixel(gs.lerpC, gs.lerpR);
       ghostSignals[i].x[1](gx);
       ghostSignals[i].y[1](gy);
       ghostSignals[i].dir[1](gs.dir);
       ghostSignals[i].frightened[1](gs.mode === "frightened");
       if (i === 3) setUndefTime(performance.now());
-
-      // ── Collision with player ──
-      const dist = Math.abs(gLerpC - pLerpC) + Math.abs(gLerpR - pLerpR);
-      if (dist < 0.8) {
-        if (gs.mode === "frightened") {
-          gs.mode = "eaten";
-          setScore(s => s + 200);
-        } else if (gs.mode !== "eaten") {
-          playerDeath();
-          return;
-        }
-      }
+      // Collision detection moved to useOverlap (GhostPlayerCollision)
     }
 
     // ── Win check ──
@@ -618,6 +635,7 @@ function App() {
   return (
     <Game width={W} height={H} backgroundColor={COL_BG} parent="game-container">
       <GameLoop onUpdate={handleUpdate} />
+      <GhostPlayerCollision />
       <KeyboardInput
         onLeft={() => { pNextDir = 2; }}
         onRight={() => { pNextDir = 0; }}
