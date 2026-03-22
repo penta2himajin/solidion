@@ -21,7 +21,10 @@ import { useOscillation } from "solidion/hooks/useOscillation";
 import { useTween } from "solidion/hooks/useTween";
 import { useSequence } from "solidion/hooks/useSequence";
 import { useFollow } from "solidion/hooks/useFollow";
+import * as debug from "solidion/debug";
 import Phaser from "phaser";
+
+debug.enable();
 
 const ASSETS = [
   "/assets/fish-red.png",
@@ -190,7 +193,8 @@ function Fish(props: { slot: number; onSelect: (s: number) => void }) {
       <sprite x={fx()} y={fy()} texture={tex()}
         origin={0.5} depth={10}
         scaleX={dir() * s() * 2} scaleY={s() * 2}
-        alpha={sleeping() ? 0.5 : 1} />
+        alpha={sleeping() ? 0.5 : 1}
+        ref={(el: any) => { (fish[i] as any)._ref = el; }} />
 <ellipse x={fx() + dir() * 8 * s()} y={fy() - 2 * s()}
         width={5 * s()}
         height={(sleeping() || feedSeq.current() === "munch") ? 1 * s() : 5 * s()}
@@ -391,7 +395,8 @@ function App() {
   const [fishCount, setFishCount] = createSignal(0);
   const [selIdx, setSelIdx] = createSignal(-1);
   const [showPanel, setShowPanel] = createSignal(false);
-  let bubbleTimer = 0, initialized = false;
+  const [debugInfo, setDebugInfo] = createSignal("");
+  let bubbleTimer = 0, initialized = false, debugTimer = 0;
 
   function spawnFish() {
     const s = fish.findIndex(f => !f.active);
@@ -487,6 +492,14 @@ function App() {
       const s = bubbles.findIndex(b => !b.active);
       if (s >= 0) bubbles[s].ctrl.activate(TANK_L + 20 + Math.random() * (TANK_R - TANK_L - 40));
     }
+
+    // Debug profiler (update every 500ms)
+    debugTimer -= delta;
+    if (debugTimer <= 0) {
+      debugTimer = 500;
+      const p = debug.getFrameProfile();
+      setDebugInfo(`props/f: ${p.setPropertyCalls}  ${p.frameTimeMs.toFixed(1)}ms`);
+    }
   };
 
   const sel = () => selIdx() >= 0 ? fish[selIdx()] : null;
@@ -562,6 +575,8 @@ function App() {
           fontSize={11} fontFamily="monospace" color="#aaccee" origin={0.5} depth={21} />
         <text x={20} y={16} text={`Fish: ${fishCount()}`}
           fontSize={12} fontFamily="monospace" color="#668899" originX={0} originY={0.5} depth={20} />
+        <text x={20} y={H - 10} text={debugInfo()}
+          fontSize={9} fontFamily="monospace" color="#334455" originX={0} originY={0.5} depth={20} />
       </Show>
 
       {/* Stats Panel */}
