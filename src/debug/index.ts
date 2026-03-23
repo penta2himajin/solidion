@@ -133,3 +133,22 @@ export function disable(): void {
 export function isEnabled(): boolean {
   return inspectEnabled || profilingEnabled;
 }
+
+/**
+ * Expose application state to the DOM for E2E test inspection.
+ *
+ * When debug is enabled, writes `data` as JSON into a hidden
+ * `<div id="solidion-debug">` element. No-op when disabled.
+ */
+export function expose(data: Record<string, unknown>): void {
+  if (!isEnabled()) return;
+  if (typeof document === "undefined") return;
+  let el = document.getElementById("solidion-debug");
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "solidion-debug";
+    el.style.display = "none";
+    document.body.appendChild(el);
+  }
+  el.textContent = JSON.stringify(data);
+}
