@@ -536,6 +536,9 @@ function App() {
         phase: phase(),
         fishCount: fishCount(),
         foodCount: food.filter(f => f.active).length,
+        selIdx: selIdx(),
+        showPanel: showPanel(),
+        fishPositions: fish.filter(f => f.active).map(f => ({ x: f.x, y: f.y })),
       });
     }
   };
