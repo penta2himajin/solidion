@@ -1,4 +1,5 @@
 import { createSignal, createMemo, onMount, onCleanup, type Accessor } from "solid-js";
+import { fsmStep, fsmSend } from "../ecs/steps";
 
 export interface StateConfig<S extends string> {
   animation?: string | Accessor<string>;
@@ -137,22 +138,21 @@ export function useStateMachine<S extends string>(
   }
 
   const send = (event: string): void => {
-    const transitions = currentConfig().on;
-    if (transitions && event in transitions) {
-      const target = transitions[event as keyof typeof transitions];
-      if (target) transition(target);
-    }
+    const result = fsmSend(state(), config.states as any, event);
+    if (result.transitioned) transition(result.state as S);
   };
 
   const is = (s: S): boolean => state() === s;
 
   const tick = (delta: number): void => {
     if (mode !== "frame" || !currentOnComplete || currentDuration <= 0) return;
-    elapsed += delta;
-    if (elapsed >= currentDuration) {
-      const target = currentOnComplete;
-      transition(target);
-    }
+    const result = fsmStep(
+      { current: state() as string, timer: elapsed },
+      config.states as any,
+      delta,
+    );
+    elapsed = result.timer;
+    if (result.transitioned) transition(result.state as S);
   };
 
   // Initialize
