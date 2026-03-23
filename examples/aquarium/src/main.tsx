@@ -497,7 +497,10 @@ function App() {
 
   // ── Master GameLoop ──
   const handleUpdate = (_t: number, delta: number) => {
-    if (phase() !== "aquarium") return;
+    if (phase() !== "aquarium") {
+      debug.expose({ phase: phase(), fishCount: fishCount(), foodCount: 0 });
+      return;
+    }
 
     // Fish AI: tick machines + hunger
     for (let i = 0; i < MAX_FISH; i++) {
@@ -529,6 +532,14 @@ function App() {
       debugTimer = 500;
       const p = debug.getFrameProfile();
       setDebugInfo(`props/f: ${p.setPropertyCalls}  ${p.frameTimeMs.toFixed(1)}ms`);
+      debug.expose({
+        phase: phase(),
+        fishCount: fishCount(),
+        foodCount: food.filter(f => f.active).length,
+        selIdx: selIdx(),
+        showPanel: showPanel(),
+        fishPositions: fish.filter(f => f.active).map(f => ({ x: f.x, y: f.y })),
+      });
     }
   };
 
