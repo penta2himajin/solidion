@@ -20,6 +20,7 @@ export default defineConfig({
       "solid-js": resolve(rootModules, "solid-js/dist/solid.js"),
     },
   },
+  base: "./",
   build: {
     outDir: "dist",
   },
