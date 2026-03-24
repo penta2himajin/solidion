@@ -1,51 +1,54 @@
 ---
-const demos = [
-  {
-    title: "Breakout",
-    description: "Classic block-breaking arcade game",
-    slug: "breakout",
-    emoji: "🧱",
+const locale = Astro.currentLocale ?? "en";
+const prefix = locale === "en" ? "" : `/${locale}`;
+
+const i18n: Record<
+  string,
+  { heading: string; subheading: string; demos: { title: string; description: string }[] }
+> = {
+  en: {
+    heading: "Examples",
+    subheading: "Game demos built with Solidion",
+    demos: [
+      { title: "Breakout", description: "Classic block-breaking arcade game" },
+      { title: "Aquarium", description: "Interactive aquarium with animated fish" },
+      { title: "Floppy Heads", description: "Flappy Bird-style game with a twist" },
+      { title: "Nadion Defense", description: "Tower defense game" },
+      { title: "Null Pow", description: "Pac-Man inspired maze game" },
+    ],
   },
-  {
-    title: "Aquarium",
-    description: "Interactive aquarium with animated fish",
-    slug: "aquarium",
-    emoji: "🐠",
+  ja: {
+    heading: "デモ",
+    subheading: "Solidionで作ったゲームデモ",
+    demos: [
+      { title: "Breakout", description: "クラシックなブロック崩しアーケードゲーム" },
+      { title: "Aquarium", description: "アニメーション付きの魚がいるインタラクティブ水族館" },
+      { title: "Floppy Heads", description: "Flappy Bird風ゲーム" },
+      { title: "Nadion Defense", description: "スペースインベーダー風ゲーム" },
+      { title: "Null Pow", description: "パックマン風迷路ゲーム" },
+    ],
   },
-  {
-    title: "Floppy Heads",
-    description: "Flappy Bird-style game with a twist",
-    slug: "floppy-heads",
-    emoji: "🐤",
-  },
-  {
-    title: "Nadion Defense",
-    description: "Tower defense game",
-    slug: "nadion-defense",
-    emoji: "🏰",
-  },
-  {
-    title: "Null Pow",
-    description: "Pac-Man inspired maze game",
-    slug: "null-pow",
-    emoji: "👻",
-  },
-];
+};
+
+const slugs = ["breakout", "aquarium", "floppy-heads", "nadion-defense", "null-pow"];
+const emojis = ["🧱", "🐠", "🐤", "🏰", "👻"];
+
+const t = i18n[locale] ?? i18n.en;
 ---
 
-<h2 style="text-align: center; margin-top: 3rem;">Examples</h2>
+<h2 style="text-align: center; margin-top: 3rem;">{t.heading}</h2>
 <p style="text-align: center; color: var(--sl-color-gray-3);">
-  Game demos built with Solidion
+  {t.subheading}
 </p>
 <div class="demo-grid">
   {
-    demos.map((demo) => (
+    t.demos.map((demo, i) => (
       <a
-        href={`/examples/${demo.slug}/`}
+        href={`${prefix}/examples/${slugs[i]}/`}
         class="demo-card"
         style="text-decoration: none;"
       >
-        <div class="demo-preview">{demo.emoji}</div>
+        <div class="demo-preview">{emojis[i]}</div>
         <div class="demo-info">
           <h3>{demo.title}</h3>
           <p>{demo.description}</p>

@@ -1,5 +1,5 @@
 ---
-title: Hooks
+title: Hooks（フック）
 description: アニメーション、ステートマシンなどのSolidion hooks
 ---
 

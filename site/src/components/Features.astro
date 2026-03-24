@@ -1,36 +1,74 @@
 ---
-const features = [
-  {
-    title: "Declarative JSX",
-    description:
-      "Write Phaser GameObjects directly in JSX. Manipulate Phaser objects without a virtual DOM.",
-  },
-  {
-    title: "Fine-Grained Reactivity",
-    description:
-      "Manage game state with SolidJS Signals. Only update what's needed — zero unnecessary re-renders.",
-  },
-  {
-    title: "Progressive Disclosure",
-    description:
-      "L0(JSX) → L1(hooks) → L2(resources) → L3(frame) → L4(raw Phaser). Gradually drop to lower-level APIs as needed.",
-  },
-  {
-    title: "Rich Hooks & Behaviors",
-    description:
-      "Hooks like useTween, useSpring, useStateMachine and declarative behaviors like Spring and Oscillate.",
-  },
-  {
-    title: "Scene Management",
-    description:
-      "Manage Phaser's scene stack as components. Includes dedicated Preload, Overlay, and more.",
-  },
-  {
-    title: "TypeScript First",
-    description:
-      "Full type definitions with type-safe access to every Phaser GameObject property.",
-  },
-];
+const locale = Astro.currentLocale ?? "en";
+
+const i18n: Record<string, { title: string; description: string }[]> = {
+  en: [
+    {
+      title: "Declarative JSX",
+      description:
+        "Write Phaser GameObjects directly in JSX. Manipulate Phaser objects without a virtual DOM.",
+    },
+    {
+      title: "Fine-Grained Reactivity",
+      description:
+        "Manage game state with SolidJS Signals. Only update what's needed — zero unnecessary re-renders.",
+    },
+    {
+      title: "Progressive Disclosure",
+      description:
+        "L0(JSX) → L1(hooks) → L2(resources) → L3(frame) → L4(raw Phaser). Gradually drop to lower-level APIs as needed.",
+    },
+    {
+      title: "Rich Hooks & Behaviors",
+      description:
+        "Hooks like useTween, useSpring, useStateMachine and declarative behaviors like Spring and Oscillate.",
+    },
+    {
+      title: "Scene Management",
+      description:
+        "Manage Phaser's scene stack as components. Includes dedicated Preload, Overlay, and more.",
+    },
+    {
+      title: "TypeScript First",
+      description:
+        "Full type definitions with type-safe access to every Phaser GameObject property.",
+    },
+  ],
+  ja: [
+    {
+      title: "宣言的JSX",
+      description:
+        "Phaser GameObjectをJSXで直接記述。仮想DOMなしでPhaserオブジェクトを操作。",
+    },
+    {
+      title: "きめ細かいリアクティビティ",
+      description:
+        "SolidJS Signalでゲーム状態を管理。必要な部分だけ更新 — 不要な再レンダリングゼロ。",
+    },
+    {
+      title: "段階的開示",
+      description:
+        "L0(JSX) → L1(hooks) → L2(resources) → L3(frame) → L4(raw Phaser)。必要に応じて低レベルAPIへ段階的にアクセス。",
+    },
+    {
+      title: "豊富なHooks & Behaviors",
+      description:
+        "useTween、useSpring、useStateMachineなどのHooksと、SpringやOscillateなどの宣言的Behavior。",
+    },
+    {
+      title: "シーン管理",
+      description:
+        "Phaserのシーンスタックをコンポーネントとして管理。Preload、Overlayなど専用コンポーネント搭載。",
+    },
+    {
+      title: "TypeScriptファースト",
+      description:
+        "完全な型定義により、すべてのPhaser GameObjectプロパティに型安全にアクセス。",
+    },
+  ],
+};
+
+const features = i18n[locale] ?? i18n.en;
 ---
 
 <div class="features">

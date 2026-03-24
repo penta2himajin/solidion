@@ -1,5 +1,5 @@
 ---
-title: Behaviors
+title: Behaviors（ビヘイビア）
 description: コンポジション用の宣言的Behaviorコンポーネント
 ---
 
