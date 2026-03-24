@@ -1,0 +1,25 @@
+---
+title: "Nadion Defense"
+description: "Space Invaders-style game with LCARS-inspired UI"
+---
+
+import GameDemo from '../../../components/GameDemo.astro';
+
+<GameDemo src="/examples/nadion-defense-app/" title="Nadion Defense" />
+
+## Controls
+
+- **Arrow keys / A D** — move phaser array
+- **Space / Click** — fire nadion particle
+
+## Highlights
+
+- **40 reactive enemies**: Each with individual `createSignal` visibility and LCARS-styled composite visuals
+- **Projectile pooling**: 24 shared bolts with 2-layer glow effect (white core + orange glow)
+- **Formation AI**: Direction reversal + step-down, speed increases as enemies are destroyed via `createMemo`
+- **LCARS UI**: Star Trek-inspired interface with pill-shaped bars and orange/lavender/purple palette
+- **Destructible shields**: 4 deflector fields with HP, fading as they take damage
+
+## Source
+
+[View on GitHub](https://github.com/penta2himajin/solidion/tree/master/examples/nadion-defense)

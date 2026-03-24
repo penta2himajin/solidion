@@ -9,7 +9,8 @@
     "test:browser": "vitest run --config vitest.browser.config.ts",
     "test:browser:coverage": "vitest run --config vitest.browser.config.ts --coverage",
     "test:coverage": "vitest run --coverage",
-    "generate:types": "npx tsx scripts/generate-types.ts"
+    "generate:types": "npx tsx scripts/generate-types.ts",
+    "build": "cd site && npm install && npx astro build"
   },
   "keywords": [],
   "author": "",

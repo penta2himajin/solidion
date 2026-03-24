@@ -1,0 +1,197 @@
+:root {
+  --sl-color-accent-low: #1a1f36;
+  --sl-color-accent: #4f6df5;
+  --sl-color-accent-high: #b8c5ff;
+  --sl-color-white: #ffffff;
+  --sl-color-gray-1: #eceef6;
+  --sl-color-gray-2: #c0c4d8;
+  --sl-color-gray-3: #8a90a8;
+  --sl-color-gray-4: #545a72;
+  --sl-color-gray-5: #353a52;
+  --sl-color-gray-6: #24283e;
+  --sl-color-black: #17192e;
+}
+
+:root[data-theme="light"] {
+  --sl-color-accent-low: #d8e0ff;
+  --sl-color-accent: #3451d1;
+  --sl-color-accent-high: #182461;
+  --sl-color-white: #17192e;
+  --sl-color-gray-1: #24283e;
+  --sl-color-gray-2: #353a52;
+  --sl-color-gray-3: #545a72;
+  --sl-color-gray-4: #8a90a8;
+  --sl-color-gray-5: #c0c4d8;
+  --sl-color-gray-6: #eceef6;
+  --sl-color-black: #ffffff;
+}
+
+/* Game demo iframe styling */
+.game-demo {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border: 2px solid var(--sl-color-gray-5);
+  border-radius: 8px;
+  overflow: hidden;
+  margin: 1.5rem 0;
+}
+
+.game-demo iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+/* Landing page styles */
+.landing-hero {
+  text-align: center;
+  padding: 4rem 1rem;
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.landing-hero h1 {
+  font-size: 3.5rem;
+  font-weight: 800;
+  margin-bottom: 1rem;
+  background: linear-gradient(135deg, var(--sl-color-accent), #8b5cf6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.landing-hero .tagline {
+  font-size: 1.25rem;
+  color: var(--sl-color-gray-3);
+  margin-bottom: 2rem;
+  line-height: 1.6;
+}
+
+.landing-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 3rem;
+}
+
+.landing-actions a {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.landing-actions a:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(79, 109, 245, 0.3);
+}
+
+.landing-actions .primary {
+  background: var(--sl-color-accent);
+  color: var(--sl-color-white);
+}
+
+:root[data-theme="light"] .landing-actions .primary {
+  color: #fff;
+}
+
+.landing-actions .secondary {
+  border: 2px solid var(--sl-color-gray-5);
+  color: var(--sl-color-white);
+}
+
+/* Feature grid */
+.features {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.5rem;
+  max-width: 960px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+.feature-card {
+  padding: 1.5rem;
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 12px;
+  background: var(--sl-color-gray-6);
+}
+
+.feature-card h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1.1rem;
+}
+
+.feature-card p {
+  margin: 0;
+  color: var(--sl-color-gray-3);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+/* Demo showcase grid */
+.demo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  max-width: 960px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+.demo-card {
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--sl-color-gray-6);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.demo-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+.demo-card .demo-preview {
+  aspect-ratio: 16 / 9;
+  background: var(--sl-color-black);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+}
+
+.demo-card .demo-info {
+  padding: 1rem 1.25rem;
+}
+
+.demo-card .demo-info h3 {
+  margin: 0 0 0.25rem;
+  font-size: 1.1rem;
+}
+
+.demo-card .demo-info h3 a {
+  color: var(--sl-color-white);
+  text-decoration: none;
+}
+
+.demo-card .demo-info h3 a:hover {
+  color: var(--sl-color-accent);
+}
+
+.demo-card .demo-info p {
+  margin: 0;
+  color: var(--sl-color-gray-3);
+  font-size: 0.85rem;
+}
+
+/* Code example on landing */
+.code-example {
+  max-width: 640px;
+  margin: 2rem auto;
+  text-align: left;
+}

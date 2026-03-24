@@ -1,0 +1,35 @@
+---
+title: "Null Pow!"
+description: "Pac-Man-style maze game — *ptr vs null references"
+---
+
+import GameDemo from '../../../components/GameDemo.astro';
+
+<GameDemo src="/examples/null-pow-app/" title="Null Pow!" />
+
+## Controls
+
+- **Arrow keys** — move pointer
+- **Space** — start / restart
+
+## Characters
+
+| Character | Language | Behavior |
+|---|---|---|
+| `*ptr` (player) | — | Collects data, eats nulls with try-catch |
+| `NULL` (C) | C | Direct chase — targets player's current tile |
+| `nil` (Ruby) | Ruby | Ambush — targets 4 tiles ahead of player |
+| `None` (Python) | Python | Pincer — targets mirror of NULL's position |
+| `undefined` (JS) | JS | Erratic — random when far, direct chase when close |
+
+## Highlights
+
+- **State machine**: Each ghost cycles through chase/scatter/frightened/eaten modes
+- **Tile-based movement**: Grid-snapped with lerp interpolation, direction queuing for input buffering
+- **4 distinct AI**: Classic Pac-Man ghost personalities
+- **Reactive dot grid**: ~170 dots with individual signals, `createMemo` for win detection
+- **Composite characters**: `undefined`'s glitch shards animate via `Math.sin(performance.now())`
+
+## Source
+
+[View on GitHub](https://github.com/penta2himajin/solidion/tree/master/examples/null-pow)

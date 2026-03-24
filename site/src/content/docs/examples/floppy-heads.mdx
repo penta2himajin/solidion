@@ -1,0 +1,24 @@
+---
+title: "Floppy Heads"
+description: "Flappy Bird-style game where a floppy disk navigates through drive heads"
+---
+
+import GameDemo from '../../../components/GameDemo.astro';
+
+<GameDemo src="/examples/floppy-heads-app/" title="Floppy Heads" />
+
+## Controls
+
+- **Click / Space** — flap (fly upward)
+- Avoid the drive heads and the ground
+
+## Highlights
+
+- **Gravity physics**: Velocity accumulates via `GRAVITY * dt`, capped at `MAX_VEL`
+- **Object pooling**: 4 head pairs are recycled — deactivated off-screen left, respawned on the right
+- **Composite visuals**: Floppy disk built from 4 rectangles (body, slider, label, hub), all rotate together
+- **Idle animation**: Bob with `Math.sin(t * 2.5) * 8` in "ready" phase
+
+## Source
+
+[View on GitHub](https://github.com/penta2himajin/solidion/tree/master/examples/floppy-heads)

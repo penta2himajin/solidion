@@ -1,0 +1,14 @@
+{
+  "name": "solidion-site",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview"
+  },
+  "dependencies": {
+    "astro": "^6.0.8",
+    "@astrojs/starlight": "^0.38.2"
+  }
+}
