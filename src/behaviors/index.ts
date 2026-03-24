@@ -5,6 +5,10 @@
  * deltas to their parent's properties. Multiple behaviors compose
  * additively.
  *
+ * Internally, each behavior delegates to the same pure step functions
+ * used by the Reactive ECS Systems — behaviors are N=1 wrappers
+ * that output deltas instead of absolute positions.
+ *
  * Usage:
  * ```tsx
  * <sprite texture="char.png" x={200} y={300}>
@@ -20,6 +24,12 @@ import { onCleanup, type Accessor } from "solid-js";
 import { addDelta, removeDelta } from "../core/meta";
 import { reapplyProp } from "../core/props";
 import { useFrame } from "../hooks/useFrame";
+import {
+  springStep, type SpringState,
+  oscillationStep,
+  followStep,
+  velocityStep, type VelocityState,
+} from "../ecs/steps";
 
 let _behaviorId = 0;
 function nextBehaviorId(): string {
@@ -59,7 +69,7 @@ export interface SpringBehaviorProps {
 }
 
 /**
- * Spring behavior: follows a target with spring dynamics.
+ * Spring behavior — N=1 wrapper around springStep.
  * Outputs delta to parent's x and y.
  */
 export function SpringBehavior(props: SpringBehaviorProps): null {
@@ -69,24 +79,16 @@ export function SpringBehavior(props: SpringBehaviorProps): null {
   const mass = props.mass ?? 1;
 
   const initial = props.target();
-  let currentX = initial.x;
-  let currentY = initial.y;
-  let velocityX = 0;
-  let velocityY = 0;
+  let state: SpringState = { x: initial.x, y: initial.y, vx: 0, vy: 0 };
 
   useFrame((_time, delta) => {
     const dt = Math.min(delta / 1000, 0.05);
     const target = props.target();
-
-    const forceX = -stiffness * (currentX - target.x) - damping * velocityX;
-    const forceY = -stiffness * (currentY - target.y) - damping * velocityY;
-
-    velocityX += (forceX / mass) * dt;
-    velocityY += (forceY / mass) * dt;
-    currentX += velocityX * dt;
-    currentY += velocityY * dt;
-
-    applyBehaviorDelta(props.parent, id, { x: currentX, y: currentY });
+    state = springStep(state, {
+      targetX: target.x, targetY: target.y,
+      stiffness, damping, mass,
+    }, dt);
+    applyBehaviorDelta(props.parent, id, { x: state.x, y: state.y });
   });
 
   onCleanup(() => removeBehaviorDelta(props.parent, id, ["x", "y"]));
@@ -101,7 +103,7 @@ export interface OscillateBehaviorProps {
 }
 
 /**
- * Oscillation behavior: periodic sine wave motion.
+ * Oscillation behavior — N=1 wrapper around oscillationStep.
  * Outputs delta to parent's x and/or y.
  */
 export function OscillateBehavior(props: OscillateBehaviorProps): null {
@@ -117,10 +119,13 @@ export function OscillateBehavior(props: OscillateBehaviorProps): null {
 
   useFrame((time) => {
     const t = time / 1000;
-    const angle = t * freq * Math.PI * 2 + phase;
+    const result = oscillationStep(t, {
+      amplitudeX: ampX, amplitudeY: ampY,
+      frequency: freq, phase,
+    });
     const delta: Record<string, number> = {};
-    if (ampX !== 0) delta.x = Math.sin(angle) * ampX;
-    if (ampY !== 0) delta.y = Math.sin(angle) * ampY;
+    if (ampX !== 0) delta.x = result.x;
+    if (ampY !== 0) delta.y = result.y;
     applyBehaviorDelta(props.parent, id, delta);
   });
 
@@ -135,7 +140,7 @@ export interface FollowBehaviorProps {
 }
 
 /**
- * Follow behavior: smooth exponential decay following.
+ * Follow behavior — N=1 wrapper around followStep.
  */
 export function FollowBehavior(props: FollowBehaviorProps): null {
   const id = nextBehaviorId();
@@ -147,9 +152,11 @@ export function FollowBehavior(props: FollowBehaviorProps): null {
 
   useFrame((_time, delta) => {
     const target = props.target();
-    const factor = 1 - Math.pow(1 - speed, delta / 16.667);
-    currentX += (target.x - currentX) * factor;
-    currentY += (target.y - currentY) * factor;
+    const next = followStep(currentX, currentY, {
+      targetX: target.x, targetY: target.y, speed,
+    }, delta / 1000);
+    currentX = next.x;
+    currentY = next.y;
     applyBehaviorDelta(props.parent, id, { x: currentX, y: currentY });
   });
 
@@ -166,37 +173,26 @@ export interface VelocityBehaviorProps {
 }
 
 /**
- * Velocity behavior: integrates position from velocity and acceleration.
+ * Velocity behavior — N=1 wrapper around velocityStep.
  */
 export function VelocityBehavior(props: VelocityBehaviorProps): null {
   const id = nextBehaviorId();
-  let posX = 0;
-  let posY = 0;
-  let velX = props.velocity.x;
-  let velY = props.velocity.y;
-  const accX = props.acceleration?.x ?? 0;
-  const accY = props.acceleration?.y ?? 0;
-  const bounceCoeff = props.bounce ?? 0;
+  let state: VelocityState = {
+    x: 0, y: 0,
+    vx: props.velocity.x, vy: props.velocity.y,
+  };
+  const stepConfig = {
+    ax: props.acceleration?.x ?? 0,
+    ay: props.acceleration?.y ?? 0,
+    bounce: props.bounce ?? 0,
+    boundsX: props.bounds?.x,
+    boundsY: props.bounds?.y,
+  };
 
   useFrame((_time, delta) => {
     const dt = Math.min(delta / 1000, 0.05);
-    velX += accX * dt;
-    velY += accY * dt;
-    posX += velX * dt;
-    posY += velY * dt;
-
-    if (props.bounds?.x) {
-      const [min, max] = props.bounds.x;
-      if (posX < min) { posX = min; velX = Math.abs(velX) * bounceCoeff; }
-      else if (posX > max) { posX = max; velX = -Math.abs(velX) * bounceCoeff; }
-    }
-    if (props.bounds?.y) {
-      const [min, max] = props.bounds.y;
-      if (posY < min) { posY = min; velY = Math.abs(velY) * bounceCoeff; }
-      else if (posY > max) { posY = max; velY = -Math.abs(velY) * bounceCoeff; }
-    }
-
-    applyBehaviorDelta(props.parent, id, { x: posX, y: posY });
+    state = velocityStep(state, stepConfig, dt);
+    applyBehaviorDelta(props.parent, id, { x: state.x, y: state.y });
   });
 
   onCleanup(() => removeBehaviorDelta(props.parent, id, ["x", "y"]));

@@ -1,5 +1,6 @@
 import { createSignal, type Accessor } from "solid-js";
 import { useFrame } from "./useFrame";
+import { oscillationStep } from "../ecs/steps";
 
 export interface OscillationConfig {
   /** Amplitude per axis. e.g. { y: 10 } for vertical float. */
@@ -11,7 +12,7 @@ export interface OscillationConfig {
 }
 
 /**
- * Periodic oscillation hook.
+ * Periodic oscillation hook — N=1 wrapper around oscillationStep.
  * Returns a Signal of delta values (not absolute positions).
  * Add these to base position for floating/breathing effects.
  */
@@ -25,11 +26,12 @@ export function useOscillation(config: OscillationConfig): Accessor<{ x: number;
 
   useFrame((time) => {
     const t = time / 1000; // seconds
-    const angle = t * freq * Math.PI * 2 + phase;
-    setVal({
-      x: Math.sin(angle) * ampX,
-      y: Math.sin(angle) * ampY,
-    });
+    setVal(oscillationStep(t, {
+      amplitudeX: ampX,
+      amplitudeY: ampY,
+      frequency: freq,
+      phase,
+    }));
   });
 
   return val;

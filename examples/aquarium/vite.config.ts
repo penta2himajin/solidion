@@ -16,6 +16,7 @@ export default defineConfig({
   resolve: {
     alias: {
       "solidion": resolve(__dirname, "../../src"),
+      "solid-js/store": resolve(rootModules, "solid-js/store/dist/store.js"),
       "solid-js/universal": resolve(rootModules, "solid-js/universal/dist/universal.js"),
       "solid-js": resolve(rootModules, "solid-js/dist/solid.js"),
     },

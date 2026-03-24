@@ -1,5 +1,6 @@
 import { createSignal, type Accessor } from "solid-js";
 import { useFrame } from "./useFrame";
+import { followStep } from "../ecs/steps";
 
 export interface FollowConfig {
   target: Accessor<{ x: number; y: number }>;
@@ -9,7 +10,7 @@ export interface FollowConfig {
 }
 
 /**
- * Smooth exponential-decay following hook.
+ * Smooth exponential-decay following hook — N=1 wrapper around followStep.
  * Follows a reactive target with configurable smoothing.
  */
 export function useFollow(config: FollowConfig): Accessor<{ x: number; y: number }> {
@@ -23,11 +24,14 @@ export function useFollow(config: FollowConfig): Accessor<{ x: number; y: number
 
   useFrame((_time, delta) => {
     const target = config.target();
-    // Frame-rate independent exponential decay
-    const factor = 1 - Math.pow(1 - speed, delta / 16.667);
-    currentX += (target.x - currentX) * factor;
-    currentY += (target.y - currentY) * factor;
-    setPos({ x: currentX, y: currentY });
+    const next = followStep(currentX, currentY, {
+      targetX: target.x,
+      targetY: target.y,
+      speed,
+    }, delta / 1000);
+    currentX = next.x;
+    currentY = next.y;
+    setPos(next);
   });
 
   return pos;
