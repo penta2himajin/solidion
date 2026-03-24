@@ -33,17 +33,17 @@ import Phaser from "phaser";
 debug.enable();
 
 const ASSETS = [
-  "/assets/fish-red.png",
-  "/assets/fish-teal.png",
-  "/assets/fish-yellow.png",
-  "/assets/jellyfish.png",
-  "/assets/seaweed.png",
-  "/assets/bubble.png",
-  "/assets/food.png",
-  "/assets/background.png",
+  "./assets/fish-red.png",
+  "./assets/fish-teal.png",
+  "./assets/fish-yellow.png",
+  "./assets/jellyfish.png",
+  "./assets/seaweed.png",
+  "./assets/bubble.png",
+  "./assets/food.png",
+  "./assets/background.png",
 ];
 
-const FISH_TEXTURES = ["/assets/fish-red.png", "/assets/fish-teal.png", "/assets/fish-yellow.png"];
+const FISH_TEXTURES = ["./assets/fish-red.png", "./assets/fish-teal.png", "./assets/fish-yellow.png"];
 
 // ── Constants ──
 const W = 640, H = 480;

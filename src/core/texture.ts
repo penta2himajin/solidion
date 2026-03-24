@@ -184,13 +184,33 @@ export function preloadAssets(
   // This avoids race conditions between auto-load (applyTexture) and preload
   // when both call scene.load.start() — Phaser's loader ignores start()
   // if already in LOADING state, causing event listeners to miss completion.
-  return new Promise<void>((resolve) => {
+  //
+  // Track failed keys so we don't poll forever on 404s.
+  const failedKeys = new Set<string>();
+  const onLoadError = (file: any) => {
+    const fk = file.key as string;
+    if (allKeys.includes(fk)) failedKeys.add(fk);
+  };
+  scene.load.on("loaderror", onLoadError);
+
+  return new Promise<void>((resolve, reject) => {
     function check() {
-      if (allKeys.every(k => scene.textures.exists(k))) {
+      // A key is "done" if it loaded successfully or failed
+      const allDone = allKeys.every(
+        k => scene.textures.exists(k) || failedKeys.has(k)
+      );
+      if (allDone) {
+        scene.load.off("loaderror", onLoadError);
         for (const key of allKeys) {
           loadingTextures.delete(key);
         }
-        resolve();
+        if (failedKeys.size > 0) {
+          reject(new Error(
+            `Failed to load assets: ${[...failedKeys].join(", ")}`
+          ));
+        } else {
+          resolve();
+        }
       } else {
         // Retry starting in case previous batch completed and loader is idle now
         if (needsLoad) {
