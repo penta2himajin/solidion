@@ -1,6 +1,7 @@
 node_modules/
 *.tsbuildinfo
 .vite/
+.astro/
 
 # Exclude build output at root, but keep pre-built example demos
 /dist/
