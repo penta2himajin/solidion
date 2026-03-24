@@ -689,8 +689,7 @@ function App() {
 
   // ── Render ──
   return (
-    <Game width={W} height={H} backgroundColor={COL_BG} parent="game-container"
-      scale={{ mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH }}>
+    <Game width={W} height={H} backgroundColor={COL_BG} parent="game-container">
       <GameLoop onUpdate={handleUpdate} />
       <GhostPlayerCollision />
       <KeyboardInput

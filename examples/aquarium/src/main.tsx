@@ -625,7 +625,6 @@ function App() {
 
   return (
     <Game width={W} height={H} backgroundColor={0x0a1a2e} parent="game-container"
-      scale={{ mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH }}
       onPointerDown={handlePointerDown}>
       <GameLoop onUpdate={handleUpdate} />
 

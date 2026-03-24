@@ -579,7 +579,6 @@ function App() {
 
   return (
     <Game width={W} height={H} backgroundColor={LCARS.bg} parent="game-container"
-      scale={{ mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH }}
       onPointerDown={handlePointerDown}
       config={{ input: { keyboard: true } }}
     >
