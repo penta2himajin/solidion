@@ -1,0 +1,24 @@
+---
+title: "Breakout"
+description: "Solidionで作ったクラシックなブロック崩しアーケードゲーム"
+---
+
+import GameDemo from '../../../../components/GameDemo.astro';
+
+<GameDemo src="/examples/breakout-app/" title="Breakout" />
+
+## 操作方法
+
+- **マウス** — パドルを移動
+- **クリック** — ボール発射 / ミス後に続行 / ゲームオーバー後にリスタート
+
+## 見どころ
+
+- **60個のリアクティブブロック**: 各ブロックが個別の`createSignal(true)`で表示を制御
+- **派生状態**: `alive()`は`createMemo`で表示中のブロックをカウントし、勝利判定に使用
+- **バッチ更新**: `batch()`で状態遷移（ライフ、フェーズ、位置）の一貫性を確保
+- **フレーム同期**: 物理演算はSolidionの`FrameManager`内で実行され、Solidの`batch()`でアトミックな更新を実現
+
+## ソースコード
+
+[GitHubで見る](https://github.com/penta2himajin/solidion/tree/master/examples/breakout)

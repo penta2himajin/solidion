@@ -1,0 +1,35 @@
+---
+title: "Null Pow!"
+description: "パックマン風迷路ゲーム — *ptr vs null参照"
+---
+
+import GameDemo from '../../../../components/GameDemo.astro';
+
+<GameDemo src="/examples/null-pow-app/" title="Null Pow!" />
+
+## 操作方法
+
+- **矢印キー** — ポインターを移動
+- **スペース** — スタート / リスタート
+
+## キャラクター
+
+| キャラクター | 言語 | 行動パターン |
+|---|---|---|
+| `*ptr`（プレイヤー） | — | データを収集、try-catchでnullを食べる |
+| `NULL`（C） | C | 直接追跡 — プレイヤーの現在タイルを目標 |
+| `nil`（Ruby） | Ruby | 待ち伏せ — プレイヤーの4タイル先を目標 |
+| `None`（Python） | Python | 挟み撃ち — NULLの位置のミラーを目標 |
+| `undefined`（JS） | JS | 不安定 — 遠いとランダム、近いと直接追跡 |
+
+## 見どころ
+
+- **ステートマシン**: 各ゴーストがchase/scatter/frightened/eatenモードを循環
+- **タイルベース移動**: グリッドスナップ + lerp補間、入力バッファリングのための方向キューイング
+- **4つの異なるAI**: クラシックなパックマンのゴーストパーソナリティ
+- **リアクティブなドットグリッド**: 約170個のドットが個別シグナル、`createMemo`で勝利判定
+- **合成キャラクター**: `undefined`のグリッチシャードが`Math.sin(performance.now())`でアニメーション
+
+## ソースコード
+
+[GitHubで見る](https://github.com/penta2himajin/solidion/tree/master/examples/null-pow)

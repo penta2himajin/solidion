@@ -6,6 +6,16 @@ export default defineConfig({
     starlight({
       title: "Solidion",
       description: "SolidJS custom renderer for Phaser 3",
+      defaultLocale: "root",
+      locales: {
+        root: {
+          label: "English",
+          lang: "en",
+        },
+        ja: {
+          label: "日本語",
+        },
+      },
       social: [
         {
           icon: "github",
@@ -16,31 +26,37 @@ export default defineConfig({
       sidebar: [
         {
           label: "Getting Started",
+          translations: { ja: "はじめに" },
           items: [
-            { label: "Introduction", slug: "getting-started/introduction" },
-            { label: "Installation", slug: "getting-started/installation" },
-            { label: "Quick Start", slug: "getting-started/quick-start" },
+            { slug: "getting-started/introduction" },
+            { slug: "getting-started/installation" },
+            { slug: "getting-started/quick-start" },
           ],
         },
         {
           label: "Guides",
+          translations: { ja: "ガイド" },
           items: [
-            { label: "Components", slug: "guides/components" },
-            { label: "Hooks", slug: "guides/hooks" },
-            { label: "Behaviors", slug: "guides/behaviors" },
+            { slug: "guides/components" },
+            { slug: "guides/hooks" },
+            { slug: "guides/behaviors" },
           ],
         },
         {
           label: "Examples",
+          translations: { ja: "デモ" },
           items: [
-            { label: "Breakout", slug: "examples/breakout" },
-            { label: "Aquarium", slug: "examples/aquarium" },
-            { label: "Floppy Heads", slug: "examples/floppy-heads" },
-            { label: "Nadion Defense", slug: "examples/nadion-defense" },
-            { label: "Null Pow", slug: "examples/null-pow" },
+            { slug: "examples/breakout" },
+            { slug: "examples/aquarium" },
+            { slug: "examples/floppy-heads" },
+            { slug: "examples/nadion-defense" },
+            { slug: "examples/null-pow" },
           ],
         },
       ],
+      components: {
+        Header: "./src/components/overrides/Header.astro",
+      },
       customCss: ["./src/styles/custom.css"],
     }),
   ],
