@@ -1,0 +1,31 @@
+---
+import { Code } from "@astrojs/starlight/components";
+
+const code = `import { render } from "solidion";
+import { createSignal } from "solid-js";
+
+function MyGame() {
+  const [x, setX] = createSignal(400);
+  const [y, setY] = createSignal(300);
+
+  return (
+    <Game width={800} height={600}>
+      <Scene name="main">
+        <sprite
+          texture="player"
+          x={x()}
+          y={y()}
+          onPointerdown={() => {
+            setX(Math.random() * 800);
+            setY(Math.random() * 600);
+          }}
+        />
+      </Scene>
+    </Game>
+  );
+}`;
+---
+
+<div class="code-example">
+  <Code code={code} lang="tsx" title="MyGame.tsx" />
+</div>

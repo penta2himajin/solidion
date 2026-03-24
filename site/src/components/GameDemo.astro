@@ -1,0 +1,13 @@
+---
+interface Props {
+  src: string;
+  title: string;
+}
+
+const { src, title } = Astro.props;
+---
+
+<div class="game-demo">
+  <iframe src={src} title={`${title} - Solidion Demo`} loading="lazy"
+  ></iframe>
+</div>

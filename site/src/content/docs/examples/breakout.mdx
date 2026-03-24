@@ -1,0 +1,24 @@
+---
+title: "Breakout"
+description: "Classic block-breaking arcade game built with Solidion"
+---
+
+import GameDemo from '../../../components/GameDemo.astro';
+
+<GameDemo src="/examples/breakout-app/" title="Breakout" />
+
+## Controls
+
+- **Mouse** — move paddle
+- **Click** — launch ball / continue after miss / restart after game over
+
+## Highlights
+
+- **60 reactive blocks**: Each block has its own `createSignal(true)` controlling visibility
+- **Derived state**: `alive()` is a `createMemo` counting visible blocks for win detection
+- **Batch updates**: `batch()` ensures consistent state transitions (lives, phase, position)
+- **Frame synchronization**: Physics runs inside Solidion's `FrameManager`, wrapped in Solid's `batch()` for atomic updates
+
+## Source
+
+[View on GitHub](https://github.com/penta2himajin/solidion/tree/master/examples/breakout)

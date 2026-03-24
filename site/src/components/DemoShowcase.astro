@@ -1,0 +1,56 @@
+---
+const demos = [
+  {
+    title: "Breakout",
+    description: "Classic block-breaking arcade game",
+    slug: "breakout",
+    emoji: "🧱",
+  },
+  {
+    title: "Aquarium",
+    description: "Interactive aquarium with animated fish",
+    slug: "aquarium",
+    emoji: "🐠",
+  },
+  {
+    title: "Floppy Heads",
+    description: "Flappy Bird-style game with a twist",
+    slug: "floppy-heads",
+    emoji: "🐤",
+  },
+  {
+    title: "Nadion Defense",
+    description: "Tower defense game",
+    slug: "nadion-defense",
+    emoji: "🏰",
+  },
+  {
+    title: "Null Pow",
+    description: "Pac-Man inspired maze game",
+    slug: "null-pow",
+    emoji: "👻",
+  },
+];
+---
+
+<h2 style="text-align: center; margin-top: 3rem;">Examples</h2>
+<p style="text-align: center; color: var(--sl-color-gray-3);">
+  Solidionで作られたゲームデモ
+</p>
+<div class="demo-grid">
+  {
+    demos.map((demo) => (
+      <a
+        href={`/examples/${demo.slug}/`}
+        class="demo-card"
+        style="text-decoration: none;"
+      >
+        <div class="demo-preview">{demo.emoji}</div>
+        <div class="demo-info">
+          <h3>{demo.title}</h3>
+          <p>{demo.description}</p>
+        </div>
+      </a>
+    ))
+  }
+</div>
