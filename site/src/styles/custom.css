@@ -189,18 +189,6 @@
   font-size: 0.85rem;
 }
 
-/* Show language switcher on mobile (Starlight hides .right-group below 50rem via .sl-hidden) */
-@media (max-width: 49.99rem) {
-  header .right-group.sl-hidden {
-    display: flex !important;
-    gap: 0.5rem;
-    align-items: center;
-  }
-  header .right-group > :not(starlight-lang-select) {
-    display: none !important;
-  }
-}
-
 /* Code example on landing */
 .code-example {
   max-width: 640px;
