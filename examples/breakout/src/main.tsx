@@ -17,7 +17,10 @@ import { Game } from "solidion/components/Game";
 import { GameLoop } from "solidion/components/GameLoop";
 import { Show } from "solidion/components/Show";
 import { Index } from "solidion/components/For";
+import * as debug from "solidion/debug";
 import Phaser from "phaser";
+
+debug.enable();
 
 // ============================================================
 // Constants
@@ -96,8 +99,23 @@ function App() {
     else if (p === "over" || p === "win") restart();
   };
 
+  // ── Debug state export ──
+  let debugTimer = 0;
+  const exposeDebug = () => {
+    debug.expose({
+      phase: phase(),
+      score: score(),
+      lives: lives(),
+      alive: alive(),
+      bx: bx(),
+      by: by(),
+    });
+  };
+
   // ── Physics (passed to <GameLoop>) ──
   const handleUpdate = (_: number, delta: number) => {
+    debugTimer -= delta;
+    if (debugTimer <= 0) { debugTimer = 200; exposeDebug(); }
     if (phase() !== "play") return;
     const dt = Math.min(delta / 1000, 0.033);
     let x = bx() + vx * dt;
