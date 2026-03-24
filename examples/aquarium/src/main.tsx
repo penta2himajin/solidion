@@ -182,8 +182,9 @@ function backEaseOut(t: number): number {
   return 1 + (s + 1) * t1 * t1 * t1 + s * t1 * t1;
 }
 
-// Jellyfish tick functions (set by Jellyfish components)
+// Jellyfish tick functions and state (set by Jellyfish components)
 const jellyTicks: ((d: number) => void)[] = [];
+const jellyStartled: (() => boolean)[] = [];
 let shakeCamera: (() => void) | null = null;
 
 // ══════════════════════════════════════════════════
@@ -218,6 +219,7 @@ function Jellyfish(props: { baseX: number; baseY: number }) {
 
   const startle = () => machine.send("STARTLE");
   jellyTicks.push((d) => machine.tick(d));
+  jellyStartled.push(startled);
 
   const jx = () => props.baseX + (startled() ? 0 : drift().x);
   const jy = () => props.baseY + (startled() ? -10 : drift().y);
@@ -606,9 +608,15 @@ function App() {
         phase: phase(),
         fishCount: fishCount(),
         foodCount: foodStore.filter(f => f.active).length,
+        bubbleCount: bubbleStore.filter(b => b.active).length,
+        fryCount: fryStore.filter(f => f.active).length,
         selIdx: selIdx(),
         showPanel: showPanel(),
         fishPositions: fishStore.filter(f => f.active).map(f => ({ x: f.x, y: f.y })),
+        fishStates: fishStore.filter(f => f.active).map(f => f.fsmState),
+        fishHungers: fishStore.filter(f => f.active).map(f => f.hunger),
+        fishEating: fishStore.filter(f => f.active).map(f => f.eating),
+        jellyStartled: jellyStartled.map(s => s()),
       });
     }
   };
