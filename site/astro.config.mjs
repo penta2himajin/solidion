@@ -51,6 +51,9 @@ export default defineConfig({
           ],
         },
       ],
+      components: {
+        Header: "./src/components/overrides/Header.astro",
+      },
       customCss: ["./src/styles/custom.css"],
     }),
   ],
