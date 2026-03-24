@@ -221,20 +221,29 @@ function PtrVisual(props: { x: number; y: number; dir: number }) {
 // Keyboard setup component (uses L4 useScene)
 // ============================================================
 
-function KeyboardInput(props: {
+function GameInput(props: {
   onLeft: () => void;
   onRight: () => void;
   onUp: () => void;
   onDown: () => void;
   onSpace: () => void;
+  onTap: () => void;
 }) {
   const scene = useScene();
-  const kb = scene.input.keyboard!;
-  kb.on("keydown-LEFT", props.onLeft);
-  kb.on("keydown-RIGHT", props.onRight);
-  kb.on("keydown-UP", props.onUp);
-  kb.on("keydown-DOWN", props.onDown);
-  kb.on("keydown-SPACE", props.onSpace);
+
+  // Keyboard (may be null on mobile devices)
+  const kb = scene.input.keyboard;
+  if (kb) {
+    kb.on("keydown-LEFT", props.onLeft);
+    kb.on("keydown-RIGHT", props.onRight);
+    kb.on("keydown-UP", props.onUp);
+    kb.on("keydown-DOWN", props.onDown);
+    kb.on("keydown-SPACE", props.onSpace);
+  }
+
+  // Pointer (works on both desktop and mobile — registered directly on scene)
+  scene.input.on("pointerdown", props.onTap);
+
   return null;
 }
 
@@ -475,11 +484,12 @@ function App() {
     const container = document.getElementById("game-container");
     if (container) {
       installTouchHandler(container, {
-        onLeft: () => { pNextDir = 2; },
-        onRight: () => { pNextDir = 0; },
-        onUp: () => { pNextDir = 3; },
-        onDown: () => { pNextDir = 1; },
+        onLeft: () => { touchStartCount++; pNextDir = 2; },
+        onRight: () => { touchStartCount++; pNextDir = 0; },
+        onUp: () => { touchStartCount++; pNextDir = 3; },
+        onDown: () => { touchStartCount++; pNextDir = 1; },
         onTap: () => {
+          touchStartCount++;
           const p = phase();
           if (p === "ready" || p === "dead" || p === "win") startGame();
         },
@@ -624,6 +634,8 @@ function App() {
 
   // ── Debug state export ──
   let debugTimer = 0;
+  let pointerDownCount = 0;
+  let touchStartCount = 0;
   const exposeDebug = () => {
     debug.expose({
       phase: phase(),
@@ -635,6 +647,9 @@ function App() {
       playerDir: pDir,
       ghostModes: ghostStates.map(gs => gs.mode),
       frightActive,
+      isTouchDevice,
+      pointerDownCount,
+      touchStartCount,
     });
   };
 
@@ -843,25 +858,22 @@ function App() {
     }
   }
 
-  // ── Pointer down handler (click / tap to start — works on both desktop and mobile) ──
-  const handlePointerDown = () => {
-    const p = phase();
-    if (p === "ready" || p === "dead" || p === "win") startGame();
-  };
-
   // ── Render ──
   return (
-    <Game width={W} height={H} backgroundColor={COL_BG} parent="game-container"
-      onPointerDown={handlePointerDown}
-    >
+    <Game width={W} height={H} backgroundColor={COL_BG} parent="game-container">
       <GameLoop onUpdate={handleUpdate} />
       <GhostPlayerCollision />
-      <KeyboardInput
+      <GameInput
         onLeft={() => { pNextDir = 2; }}
         onRight={() => { pNextDir = 0; }}
         onUp={() => { pNextDir = 3; }}
         onDown={() => { pNextDir = 1; }}
         onSpace={() => {
+          const p = phase();
+          if (p === "ready" || p === "dead" || p === "win") startGame();
+        }}
+        onTap={() => {
+          pointerDownCount++;
           const p = phase();
           if (p === "ready" || p === "dead" || p === "win") startGame();
         }}
