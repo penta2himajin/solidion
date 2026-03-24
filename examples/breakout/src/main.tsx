@@ -193,6 +193,7 @@ function App() {
   // ── Render ──
   return (
     <Game width={W} height={H} backgroundColor={0x0f1729} parent="game-container"
+      scale={{ mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH }}
       onPointerMove={handlePointerMove}
       onPointerDown={handlePointerDown}
     >
