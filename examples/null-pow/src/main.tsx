@@ -239,6 +239,141 @@ function KeyboardInput(props: {
 }
 
 // ============================================================
+// Swipe / tap detection for mobile (uses Game's pointer events)
+// ============================================================
+
+const SWIPE_THRESHOLD = 20; // minimum px to count as swipe
+const TAP_THRESHOLD = 10;   // max px movement for a tap
+const TAP_MAX_MS = 300;     // max duration for a tap
+
+interface SwipeState {
+  startX: number;
+  startY: number;
+  startTime: number;
+}
+
+function createSwipeHandler(callbacks: {
+  onLeft: () => void;
+  onRight: () => void;
+  onUp: () => void;
+  onDown: () => void;
+  onTap: () => void;
+}) {
+  let swipe: SwipeState | null = null;
+
+  const onPointerDown = (pointer: Phaser.Input.Pointer) => {
+    swipe = { startX: pointer.x, startY: pointer.y, startTime: pointer.downTime };
+  };
+
+  const onPointerUp = (pointer: Phaser.Input.Pointer) => {
+    if (!swipe) return;
+    const dx = pointer.x - swipe.startX;
+    const dy = pointer.y - swipe.startY;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    const elapsed = pointer.upTime - swipe.startTime;
+    swipe = null;
+
+    // Tap detection
+    if (dist < TAP_THRESHOLD && elapsed < TAP_MAX_MS) {
+      callbacks.onTap();
+      return;
+    }
+
+    // Swipe detection
+    if (dist < SWIPE_THRESHOLD) return;
+
+    if (Math.abs(dx) > Math.abs(dy)) {
+      if (dx > 0) callbacks.onRight();
+      else callbacks.onLeft();
+    } else {
+      if (dy > 0) callbacks.onDown();
+      else callbacks.onUp();
+    }
+  };
+
+  return { onPointerDown, onPointerUp };
+}
+
+// ============================================================
+// On-screen D-pad for mobile (rendered as Phaser GameObjects)
+// ============================================================
+
+const DPAD_SIZE = 40;
+const DPAD_GAP = 4;
+const DPAD_ALPHA = 0.25;
+const DPAD_ACTIVE_ALPHA = 0.5;
+
+function DPad(props: {
+  x: number;
+  y: number;
+  onDir: (dir: number) => void;
+  activeDir: () => number;
+  visible: () => boolean;
+}) {
+  const bx = props.x;
+  const by = props.y;
+  const s = DPAD_SIZE;
+  const g = DPAD_GAP;
+  const col = 0xffffff;
+
+  // Positions: right(0), down(1), left(2), up(3)
+  const positions = [
+    { x: bx + s + g, y: by },       // right
+    { x: bx,         y: by + s + g }, // down
+    { x: bx - s - g, y: by },       // left
+    { x: bx,         y: by - s - g }, // up
+  ];
+
+  // Arrow characters for visual hint
+  const arrows = ["▶", "▼", "◀", "▲"];
+
+  return (
+    <>
+      {positions.map((pos, i) => (
+        <>
+          <rectangle
+            x={pos.x} y={pos.y}
+            width={s} height={s}
+            fillColor={col}
+            origin={0.5}
+            depth={20}
+            alpha={props.activeDir() === i ? DPAD_ACTIVE_ALPHA : DPAD_ALPHA}
+            visible={props.visible()}
+            interactive
+            onPointerDown={() => props.onDir(i)}
+          />
+          <text
+            x={pos.x} y={pos.y}
+            text={arrows[i]}
+            fontSize={16}
+            color="#000000"
+            origin={0.5}
+            depth={21}
+            alpha={props.activeDir() === i ? 0.8 : 0.4}
+            visible={props.visible()}
+          />
+        </>
+      ))}
+      {/* Center circle (decoration) */}
+      <ellipse
+        x={bx} y={by}
+        width={s * 0.6} height={s * 0.6}
+        fillColor={col}
+        origin={0.5}
+        depth={20}
+        alpha={DPAD_ALPHA * 0.5}
+        visible={props.visible()}
+      />
+    </>
+  );
+}
+
+// Detect if the device likely has touch support
+const isTouchDevice = typeof window !== "undefined" && (
+  "ontouchstart" in window || navigator.maxTouchPoints > 0
+);
+
+// ============================================================
 // App
 // ============================================================
 
@@ -329,11 +464,29 @@ function App() {
   // ── Overlay ──
   const overlayMsg = () => {
     const p = phase();
-    if (p === "ready") return ["NULL POW!", "#00ddaa", "ARROW KEYS TO MOVE — SPACE TO START"] as const;
-    if (p === "dead") return ["NullPointerException", "#ff3333", `score: ${score()} — SPACE to retry`] as const;
+    const touch = isTouchDevice;
+    if (p === "ready") return ["NULL POW!", "#00ddaa", touch ? "SWIPE TO MOVE — TAP TO START" : "ARROW KEYS TO MOVE — SPACE TO START"] as const;
+    if (p === "dead") return ["NullPointerException", "#ff3333", touch ? `score: ${score()} — TAP to retry` : `score: ${score()} — SPACE to retry`] as const;
     if (p === "win") return ["GARBAGE COLLECTED!", "#00ff88", `score: ${score()} — all data recovered`] as const;
     return null;
   };
+
+  // ── Swipe handler ──
+  const swipeCallbacks = {
+    onLeft: () => { pNextDir = 2; },
+    onRight: () => { pNextDir = 0; },
+    onUp: () => { pNextDir = 3; },
+    onDown: () => { pNextDir = 1; },
+    onTap: () => {
+      const p = phase();
+      if (p === "ready" || p === "dead" || p === "win") startGame();
+    },
+  };
+  const swipe = createSwipeHandler(swipeCallbacks);
+
+  // D-pad active direction signal
+  const [dpadDir, setDpadDir] = createSignal(0);
+  const showDpad = () => isTouchDevice && phase() === "play";
 
   // ── Ghost AI: choose direction ──
   function chooseDir(gs: GhostState, targetC: number, targetR: number): number {
@@ -689,7 +842,10 @@ function App() {
 
   // ── Render ──
   return (
-    <Game width={W} height={H} backgroundColor={COL_BG} parent="game-container">
+    <Game width={W} height={H} backgroundColor={COL_BG} parent="game-container"
+      onPointerDown={swipe.onPointerDown}
+      onPointerUp={swipe.onPointerUp}
+    >
       <GameLoop onUpdate={handleUpdate} />
       <GhostPlayerCollision />
       <KeyboardInput
@@ -750,6 +906,15 @@ function App() {
           origin={0.5} depth={10}
         />
       </Show>
+
+      {/* On-screen D-pad for touch devices */}
+      <DPad
+        x={W - 70}
+        y={H - 70}
+        onDir={(dir: number) => { pNextDir = dir; setDpadDir(dir); }}
+        activeDir={dpadDir}
+        visible={showDpad}
+      />
     </Game>
   );
 }
