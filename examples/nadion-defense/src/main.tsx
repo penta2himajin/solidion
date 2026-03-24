@@ -195,6 +195,9 @@ function App() {
   let moveLeft = false, moveRight = false;
   let lastFireTime = 0;
 
+  // Touch target: player moves toward this X at PLAYER_SPEED. -1 = no target.
+  let touchTargetX = -1;
+
   let formOffX = 0;
   let formOffY = 0;
   let formDir = 1;
@@ -409,11 +412,17 @@ function App() {
 
   // ── Pointer down handler ──
 
-  const handlePointerDown = () => {
+  const handlePointerDown = (pointer: Phaser.Input.Pointer) => {
     const p = phase();
     if (p === "ready") { startGame(); return; }
     if (p === "dead") { startGame(); return; }
     if (p === "win") { nextWave(); return; }
+
+    // Set touch move target
+    touchTargetX = Phaser.Math.Clamp(
+      pointer.x, PLAY_LEFT + PLAYER_W / 2, PLAY_RIGHT - PLAYER_W / 2);
+
+    // Fire
     const now = performance.now();
     if (now - lastFireTime < FIRE_COOLDOWN) return;
     lastFireTime = now;
@@ -421,14 +430,13 @@ function App() {
   };
 
   const handlePointerMove = (pointer: Phaser.Input.Pointer) => {
-    if (phase() !== "play") return;
-    if (!pointer.isDown) return;
-    const px = Phaser.Math.Clamp(
-      pointer.x,
-      PLAY_LEFT + PLAYER_W / 2,
-      PLAY_RIGHT - PLAYER_W / 2,
-    );
-    setPlayerX(px);
+    if (phase() !== "play" || !pointer.isDown) return;
+    touchTargetX = Phaser.Math.Clamp(
+      pointer.x, PLAY_LEFT + PLAYER_W / 2, PLAY_RIGHT - PLAYER_W / 2);
+  };
+
+  const handlePointerUp = () => {
+    touchTargetX = -1;
   };
 
   // ── Debug state export ──
@@ -454,10 +462,22 @@ function App() {
     if (phase() !== "play") return;
     const dt = Math.min(delta / 1000, 0.033);
 
-    // Player movement
+    // Player movement (keyboard)
     let px = playerX();
     if (moveLeft) px -= PLAYER_SPEED * dt;
     if (moveRight) px += PLAYER_SPEED * dt;
+
+    // Player movement (touch target)
+    if (touchTargetX >= 0) {
+      const diff = touchTargetX - px;
+      const step = PLAYER_SPEED * dt;
+      if (Math.abs(diff) <= step) {
+        px = touchTargetX;
+      } else {
+        px += Math.sign(diff) * step;
+      }
+    }
+
     px = Phaser.Math.Clamp(px, PLAY_LEFT + PLAYER_W / 2, PLAY_RIGHT - PLAYER_W / 2);
     setPlayerX(px);
 
@@ -592,6 +612,7 @@ function App() {
     <Game width={W} height={H} backgroundColor={LCARS.bg} parent="game-container"
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
       config={{ input: { keyboard: true } }}
     >
       <GameLoop onUpdate={handleUpdate} />
