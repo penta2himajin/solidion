@@ -6,6 +6,16 @@ export default defineConfig({
     starlight({
       title: "Solidion",
       description: "SolidJS custom renderer for Phaser 3",
+      defaultLocale: "root",
+      locales: {
+        root: {
+          label: "English",
+          lang: "en",
+        },
+        ja: {
+          label: "日本語",
+        },
+      },
       social: [
         {
           icon: "github",

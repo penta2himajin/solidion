@@ -1,0 +1,24 @@
+---
+title: "Floppy Heads"
+description: "フロッピーディスクがドライブヘッドの間を飛ぶFlappy Bird風ゲーム"
+---
+
+import GameDemo from '../../../../components/GameDemo.astro';
+
+<GameDemo src="/examples/floppy-heads-app/" title="Floppy Heads" />
+
+## 操作方法
+
+- **クリック / スペース** — フラップ（上昇）
+- ドライブヘッドと地面を避けよう
+
+## 見どころ
+
+- **重力物理**: 速度が`GRAVITY * dt`で蓄積、`MAX_VEL`で上限
+- **オブジェクトプーリング**: 4つのヘッドペアを再利用 — 画面左で非アクティブ化、右で再スポーン
+- **合成ビジュアル**: フロッピーディスクは4つの矩形（ボディ、スライダー、ラベル、ハブ）で構成、すべて一緒に回転
+- **アイドルアニメーション**: "ready"フェーズで`Math.sin(t * 2.5) * 8`で揺れる
+
+## ソースコード
+
+[GitHubで見る](https://github.com/penta2himajin/solidion/tree/master/examples/floppy-heads)
