@@ -18,7 +18,10 @@ import { createSignal, batch, createRoot, onCleanup } from "solid-js";
 import { Game } from "solidion/components/Game";
 import { GameLoop } from "solidion/components/GameLoop";
 import { Show } from "solidion/components/Show";
+import * as debug from "solidion/debug";
 import Phaser from "phaser";
+
+debug.enable();
 
 // ============================================================
 // Constants
@@ -177,8 +180,22 @@ function App() {
   document.addEventListener("keydown", handleKeyDown);
   onCleanup(() => document.removeEventListener("keydown", handleKeyDown));
 
+  // -- Debug state export --
+  let debugTimer = 0;
+  const exposeDebug = () => {
+    debug.expose({
+      phase: phase(),
+      score: score(),
+      best: best(),
+      diskY: diskY(),
+      activeHeads: heads.filter(h => h.active).length,
+    });
+  };
+
   // -- Physics (GameLoop) --
   const handleUpdate = (_: number, delta: number) => {
+    debugTimer -= delta;
+    if (debugTimer <= 0) { debugTimer = 200; exposeDebug(); }
     const p = phase();
 
     // Idle bobbing animation

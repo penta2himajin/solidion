@@ -22,6 +22,9 @@ import { GameLoop } from "solidion/components/GameLoop";
 import { Show } from "solidion/components/Show";
 import { useScene } from "solidion/contexts";
 import { useOverlap } from "solidion/hooks/useOverlap";
+import * as debug from "solidion/debug";
+
+debug.enable();
 
 // ============================================================
 // Constants
@@ -463,8 +466,26 @@ function App() {
     return null;
   }
 
+  // ── Debug state export ──
+  let debugTimer = 0;
+  const exposeDebug = () => {
+    debug.expose({
+      phase: phase(),
+      score: score(),
+      lives: lives(),
+      totalDots: totalDots(),
+      playerCol: pCol,
+      playerRow: pRow,
+      playerDir: pDir,
+      ghostModes: ghostStates.map(gs => gs.mode),
+      frightActive,
+    });
+  };
+
   // ── Game loop ──
   const handleUpdate = (_: number, delta: number) => {
+    debugTimer -= delta;
+    if (debugTimer <= 0) { debugTimer = 200; exposeDebug(); }
     if (phase() !== "play") return;
     const dt = Math.min(delta / 1000, 0.05);
 

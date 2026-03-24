@@ -21,7 +21,10 @@ import { GameLoop } from "solidion/components/GameLoop";
 import { Show } from "solidion/components/Show";
 import { Index } from "solidion/components/For";
 import { useScene } from "solidion/contexts";
+import * as debug from "solidion/debug";
 import Phaser from "phaser";
+
+debug.enable();
 
 // ============================================================
 // Constants
@@ -417,9 +420,26 @@ function App() {
     fireBolt(playerX(), PLAYER_Y - PLAYER_H / 2 - 10, -BOLT_SPEED, true);
   };
 
+  // ── Debug state export ──
+  let debugTimer = 0;
+  const exposeDebug = () => {
+    debug.expose({
+      phase: phase(),
+      score: score(),
+      lives: lives(),
+      wave: wave(),
+      alive: alive(),
+      playerX: playerX(),
+      shieldHps: shieldStates.map(s => s.hp),
+      activeBolts: bolts.filter(b => b.active).length,
+    });
+  };
+
   // ── Game loop ──
 
   const handleUpdate = (_: number, delta: number) => {
+    debugTimer -= delta;
+    if (debugTimer <= 0) { debugTimer = 200; exposeDebug(); }
     if (phase() !== "play") return;
     const dt = Math.min(delta / 1000, 0.033);
 
