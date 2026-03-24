@@ -464,8 +464,8 @@ function App() {
   const overlayMsg = () => {
     const p = phase();
     const touch = isTouchDevice;
-    if (p === "ready") return ["NULL POW!", "#00ddaa", touch ? "SWIPE TO MOVE — TAP TO START" : "ARROW KEYS TO MOVE — SPACE TO START"] as const;
-    if (p === "dead") return ["NullPointerException", "#ff3333", touch ? `score: ${score()} — TAP to retry` : `score: ${score()} — SPACE to retry`] as const;
+    if (p === "ready") return ["NULL POW!", "#00ddaa", touch ? "SWIPE TO MOVE — TAP TO START" : "ARROW KEYS — CLICK / SPACE TO START"] as const;
+    if (p === "dead") return ["NullPointerException", "#ff3333", touch ? `score: ${score()} — tap to retry` : `score: ${score()} — click / SPACE to retry`] as const;
     if (p === "win") return ["GARBAGE COLLECTED!", "#00ff88", `score: ${score()} — all data recovered`] as const;
     return null;
   };
@@ -843,9 +843,17 @@ function App() {
     }
   }
 
+  // ── Pointer down handler (click / tap to start — works on both desktop and mobile) ──
+  const handlePointerDown = () => {
+    const p = phase();
+    if (p === "ready" || p === "dead" || p === "win") startGame();
+  };
+
   // ── Render ──
   return (
-    <Game width={W} height={H} backgroundColor={COL_BG} parent="game-container">
+    <Game width={W} height={H} backgroundColor={COL_BG} parent="game-container"
+      onPointerDown={handlePointerDown}
+    >
       <GameLoop onUpdate={handleUpdate} />
       <GhostPlayerCollision />
       <KeyboardInput
