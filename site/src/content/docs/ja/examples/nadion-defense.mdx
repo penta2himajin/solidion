@@ -1,0 +1,25 @@
+---
+title: "Nadion Defense"
+description: "LCARS風UIのスペースインベーダー風ゲーム"
+---
+
+import GameDemo from '../../../../components/GameDemo.astro';
+
+<GameDemo src="/examples/nadion-defense-app/" title="Nadion Defense" />
+
+## 操作方法
+
+- **矢印キー / A D** — フェイザーアレイを移動
+- **スペース / クリック** — ナディオン粒子を発射
+
+## 見どころ
+
+- **40体のリアクティブな敵**: 各敵が個別の`createSignal`で表示を制御、LCARS風の合成ビジュアル
+- **弾プーリング**: 24個の共有ボルト、2層グロー効果（白コア + オレンジグロー）
+- **フォーメーションAI**: 方向反転 + ステップダウン、`createMemo`で敵が減るほどスピードアップ
+- **LCARS UI**: スタートレック風インターフェース、ピル型バーとオレンジ/ラベンダー/パープルのパレット
+- **破壊可能シールド**: HP付き4基のデフレクターフィールド、ダメージでフェードアウト
+
+## ソースコード
+
+[GitHubで見る](https://github.com/penta2himajin/solidion/tree/master/examples/nadion-defense)
