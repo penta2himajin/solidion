@@ -50,4 +50,4 @@ export default defineConfig({
 
 ## 次のステップ
 
-- [クイックスタート](/ja/getting-started/quick-start/) — 最初のゲームを作る
+- [クイックスタート](/ja/getting-started/quick-start/) — 最初のゲームを作ってみる

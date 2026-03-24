@@ -49,6 +49,6 @@ render(() => <App />, document.getElementById("game")!);
 
 ## 次のステップ
 
-- [コンポーネント](/ja/guides/components/) — 利用可能なコンポーネントについて学ぶ
-- [Hooks](/ja/guides/hooks/) — アニメーションやステートマシンを追加
-- [サンプル](/ja/examples/breakout/) — 完全なゲームのサンプルを見る
+- [コンポーネント](/ja/guides/components/) — 使えるコンポーネント一覧
+- [Hooks](/ja/guides/hooks/) — アニメーションやステートマシンの追加
+- [サンプル](/ja/examples/breakout/) — 完成したゲームの実例を見る
