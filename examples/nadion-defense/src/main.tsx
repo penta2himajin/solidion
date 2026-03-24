@@ -195,11 +195,6 @@ function App() {
   let moveLeft = false, moveRight = false;
   let lastFireTime = 0;
 
-  // Touch/pointer drag state for mobile
-  let pointerDragging = false;
-  let pointerStartX = 0;
-  let playerStartX = 0;
-
   let formOffX = 0;
   let formOffY = 0;
   let formDir = 1;
@@ -414,18 +409,11 @@ function App() {
 
   // ── Pointer down handler ──
 
-  const handlePointerDown = (pointer: Phaser.Input.Pointer) => {
+  const handlePointerDown = () => {
     const p = phase();
     if (p === "ready") { startGame(); return; }
     if (p === "dead") { startGame(); return; }
     if (p === "win") { nextWave(); return; }
-
-    // Start drag tracking for mobile movement
-    pointerDragging = true;
-    pointerStartX = pointer.x;
-    playerStartX = playerX();
-
-    // Fire
     const now = performance.now();
     if (now - lastFireTime < FIRE_COOLDOWN) return;
     lastFireTime = now;
@@ -433,18 +421,14 @@ function App() {
   };
 
   const handlePointerMove = (pointer: Phaser.Input.Pointer) => {
-    if (!pointerDragging || phase() !== "play") return;
-    const dx = pointer.x - pointerStartX;
+    if (phase() !== "play") return;
+    if (!pointer.isDown) return;
     const px = Phaser.Math.Clamp(
-      playerStartX + dx,
+      pointer.x,
       PLAY_LEFT + PLAYER_W / 2,
       PLAY_RIGHT - PLAYER_W / 2,
     );
     setPlayerX(px);
-  };
-
-  const handlePointerUp = () => {
-    pointerDragging = false;
   };
 
   // ── Debug state export ──
@@ -608,7 +592,6 @@ function App() {
     <Game width={W} height={H} backgroundColor={LCARS.bg} parent="game-container"
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
-      onPointerUp={handlePointerUp}
       config={{ input: { keyboard: true } }}
     >
       <GameLoop onUpdate={handleUpdate} />
