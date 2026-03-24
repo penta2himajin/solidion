@@ -12,8 +12,8 @@ test.describe("null-pow example", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/");
     await expect(page.locator("canvas")).toBeVisible({ timeout: 10_000 });
-    // Click canvas to ensure Phaser keyboard input has focus
-    await page.locator("canvas").click();
+    // Focus canvas for keyboard input without triggering pointerdown (which starts the game)
+    await page.locator("canvas").focus();
     await page.waitForTimeout(200);
   });
 
@@ -21,6 +21,23 @@ test.describe("null-pow example", () => {
     await expect(async () => {
       const state = await getDebugState(page);
       expect(state.phase).toBe("ready");
+    }).toPass({ timeout: 5000 });
+  });
+
+  test("click on canvas starts the game", async ({ page }) => {
+    await expect(async () => {
+      const state = await getDebugState(page);
+      expect(state.phase).toBe("ready");
+    }).toPass({ timeout: 5000 });
+
+    const canvas = page.locator("canvas");
+    await canvas.click();
+
+    await expect(async () => {
+      const state = await getDebugState(page);
+      expect(state.phase).toBe("play");
+      expect(state.score).toBe(0);
+      expect(state.lives).toBe(3);
     }).toPass({ timeout: 5000 });
   });
 

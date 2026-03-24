@@ -12,8 +12,8 @@ test.describe("null-pow mobile", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/");
     await expect(page.locator("canvas")).toBeVisible({ timeout: 10_000 });
-    await page.locator("canvas").tap();
-    await page.waitForTimeout(200);
+    // Wait for Phaser to boot — don't tap, as that starts the game now
+    await page.waitForTimeout(500);
   });
 
   test("canvas fits within mobile viewport", async ({ page }) => {
@@ -40,6 +40,72 @@ test.describe("null-pow mobile", () => {
     await expect(async () => {
       const state = await getDebugState(page);
       expect(state.phase).toBe("ready");
+    }).toPass({ timeout: 5000 });
+  });
+
+  test("tap on canvas starts the game", async ({ page }) => {
+    await expect(async () => {
+      const state = await getDebugState(page);
+      expect(state.phase).toBe("ready");
+    }).toPass({ timeout: 5000 });
+
+    const canvas = page.locator("canvas");
+    await canvas.tap();
+
+    await expect(async () => {
+      const state = await getDebugState(page);
+      expect(state.phase).toBe("play");
+      expect(state.score).toBe(0);
+      expect(state.lives).toBe(3);
+    }).toPass({ timeout: 5000 });
+  });
+
+  test("swipe changes player direction", async ({ page }) => {
+    await expect(async () => {
+      const state = await getDebugState(page);
+      expect(state.phase).toBe("ready");
+    }).toPass({ timeout: 5000 });
+
+    // Start the game
+    const canvas = page.locator("canvas");
+    await canvas.tap();
+
+    await expect(async () => {
+      const state = await getDebugState(page);
+      expect(state.phase).toBe("play");
+    }).toPass({ timeout: 5000 });
+
+    const box = await canvas.boundingBox();
+    if (!box) throw new Error("Canvas not found");
+
+    const cx = box.x + box.width / 2;
+    const cy = box.y + box.height / 2;
+
+    // Swipe left
+    await page.touchscreen.tap(cx, cy);
+    await page.waitForTimeout(100);
+    // Use manual touch sequence for swipe
+    await page.evaluate(({ cx, cy }) => {
+      const c = document.querySelector("canvas")!;
+      const opts = (x: number, y: number) => ({
+        bubbles: true, cancelable: true,
+        touches: [new Touch({ identifier: 1, target: c, clientX: x, clientY: y })],
+        changedTouches: [new Touch({ identifier: 1, target: c, clientX: x, clientY: y })],
+      });
+      c.dispatchEvent(new TouchEvent("touchstart", opts(cx, cy)));
+      c.dispatchEvent(new TouchEvent("touchend", {
+        bubbles: true, cancelable: true,
+        touches: [],
+        changedTouches: [new Touch({ identifier: 1, target: c, clientX: cx - 50, clientY: cy })],
+      }));
+    }, { cx, cy });
+
+    await page.waitForTimeout(500);
+
+    await expect(async () => {
+      const state = await getDebugState(page);
+      // playerDir 2 = left
+      expect(state.playerDir).toBe(2);
     }).toPass({ timeout: 5000 });
   });
 
