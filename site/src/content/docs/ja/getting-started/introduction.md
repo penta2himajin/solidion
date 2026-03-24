@@ -5,7 +5,7 @@ description: Solidionとは何か、なぜ使うのか
 
 Solidionは[SolidJS](https://www.solidjs.com/)のユニバーサルレンダラーをベースに構築された[Phaser 3](https://phaser.io/)用カスタムレンダラーです。宣言的なJSXときめ細かいリアクティビティを使ってPhaserゲームを構築できます。
 
-## なぜSolidion？
+## Solidionを選ぶ理由
 
 - **仮想DOMなし** — SolidJSがDOM要素を直接操作するのと同様に、Phaser GameObjectsを直接操作
 - **きめ細かいリアクティビティ** — 変更されたプロパティだけが更新され、差分比較のオーバーヘッドなし
