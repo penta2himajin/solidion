@@ -189,13 +189,14 @@
   font-size: 0.85rem;
 }
 
-/* Show language switcher on mobile (Starlight hides .right-group below 50rem) */
+/* Show language switcher on mobile (Starlight hides .right-group below 50rem via .sl-hidden) */
 @media (max-width: 49.99rem) {
-  .right-group {
+  header .right-group.sl-hidden {
     display: flex !important;
     gap: 0.5rem;
+    align-items: center;
   }
-  .right-group > :not(starlight-lang-select) {
+  header .right-group > :not(starlight-lang-select) {
     display: none !important;
   }
 }
