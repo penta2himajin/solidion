@@ -239,39 +239,40 @@ function KeyboardInput(props: {
 }
 
 // ============================================================
-// Swipe / tap detection for mobile (uses Game's pointer events)
+// Swipe / tap detection for mobile (DOM-level touch events)
 // ============================================================
 
 const SWIPE_THRESHOLD = 20; // minimum px to count as swipe
 const TAP_THRESHOLD = 10;   // max px movement for a tap
 const TAP_MAX_MS = 300;     // max duration for a tap
 
-interface SwipeState {
-  startX: number;
-  startY: number;
-  startTime: number;
-}
+function installTouchHandler(
+  container: HTMLElement,
+  callbacks: {
+    onLeft: () => void;
+    onRight: () => void;
+    onUp: () => void;
+    onDown: () => void;
+    onTap: () => void;
+  },
+) {
+  let startX = 0;
+  let startY = 0;
+  let startTime = 0;
 
-function createSwipeHandler(callbacks: {
-  onLeft: () => void;
-  onRight: () => void;
-  onUp: () => void;
-  onDown: () => void;
-  onTap: () => void;
-}) {
-  let swipe: SwipeState | null = null;
+  container.addEventListener("touchstart", (e: TouchEvent) => {
+    const t = e.touches[0];
+    startX = t.clientX;
+    startY = t.clientY;
+    startTime = performance.now();
+  }, { passive: true });
 
-  const onPointerDown = (pointer: Phaser.Input.Pointer) => {
-    swipe = { startX: pointer.x, startY: pointer.y, startTime: pointer.downTime };
-  };
-
-  const onPointerUp = (pointer: Phaser.Input.Pointer) => {
-    if (!swipe) return;
-    const dx = pointer.x - swipe.startX;
-    const dy = pointer.y - swipe.startY;
+  container.addEventListener("touchend", (e: TouchEvent) => {
+    const t = e.changedTouches[0];
+    const dx = t.clientX - startX;
+    const dy = t.clientY - startY;
     const dist = Math.sqrt(dx * dx + dy * dy);
-    const elapsed = pointer.upTime - swipe.startTime;
-    swipe = null;
+    const elapsed = performance.now() - startTime;
 
     // Tap detection
     if (dist < TAP_THRESHOLD && elapsed < TAP_MAX_MS) {
@@ -289,9 +290,7 @@ function createSwipeHandler(callbacks: {
       if (dy > 0) callbacks.onDown();
       else callbacks.onUp();
     }
-  };
-
-  return { onPointerDown, onPointerUp };
+  }, { passive: true });
 }
 
 // ============================================================
@@ -471,18 +470,22 @@ function App() {
     return null;
   };
 
-  // ── Swipe handler ──
-  const swipeCallbacks = {
-    onLeft: () => { pNextDir = 2; },
-    onRight: () => { pNextDir = 0; },
-    onUp: () => { pNextDir = 3; },
-    onDown: () => { pNextDir = 1; },
-    onTap: () => {
-      const p = phase();
-      if (p === "ready" || p === "dead" || p === "win") startGame();
-    },
-  };
-  const swipe = createSwipeHandler(swipeCallbacks);
+  // ── Touch handler (installed on DOM container for immediate response) ──
+  if (isTouchDevice) {
+    const container = document.getElementById("game-container");
+    if (container) {
+      installTouchHandler(container, {
+        onLeft: () => { pNextDir = 2; },
+        onRight: () => { pNextDir = 0; },
+        onUp: () => { pNextDir = 3; },
+        onDown: () => { pNextDir = 1; },
+        onTap: () => {
+          const p = phase();
+          if (p === "ready" || p === "dead" || p === "win") startGame();
+        },
+      });
+    }
+  }
 
   // D-pad active direction signal
   const [dpadDir, setDpadDir] = createSignal(0);
@@ -842,10 +845,7 @@ function App() {
 
   // ── Render ──
   return (
-    <Game width={W} height={H} backgroundColor={COL_BG} parent="game-container"
-      onPointerDown={swipe.onPointerDown}
-      onPointerUp={swipe.onPointerUp}
-    >
+    <Game width={W} height={H} backgroundColor={COL_BG} parent="game-container">
       <GameLoop onUpdate={handleUpdate} />
       <GhostPlayerCollision />
       <KeyboardInput
