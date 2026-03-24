@@ -274,6 +274,7 @@ export class MockTextureManager {
 
 export class MockLoader {
   private listeners = new Map<string, Function>();
+  private persistentListeners = new Map<string, Set<Function>>();
 
   image(_key: string, _url: string) {}
   atlas(_key: string, _imageUrl: string, _jsonUrl: string) {}
@@ -284,6 +285,17 @@ export class MockLoader {
     this.listeners.set(event, fn);
   }
 
+  on(event: string, fn: Function) {
+    if (!this.persistentListeners.has(event)) {
+      this.persistentListeners.set(event, new Set());
+    }
+    this.persistentListeners.get(event)!.add(fn);
+  }
+
+  off(event: string, fn: Function) {
+    this.persistentListeners.get(event)?.delete(fn);
+  }
+
   /** Test helper: fire a load complete event */
   fireComplete(type: string, key: string) {
     const event = `filecomplete-${type}-${key}`;
@@ -292,6 +304,11 @@ export class MockLoader {
       fn();
       this.listeners.delete(event);
     }
+  }
+
+  /** Test helper: fire a load error event */
+  fireError(key: string) {
+    this.persistentListeners.get("loaderror")?.forEach(fn => fn({ key }));
   }
 }
 
