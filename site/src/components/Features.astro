@@ -38,10 +38,10 @@ const i18n: Record<string, { title: string; description: string }[]> = {
     {
       title: "宣言的なJSX",
       description:
-        "PhaserのGameObjectをJSXで直接記述。仮想DOMなしで操作できます。",
+        "PhaserのGameObjectをJSXで直接記述。仮想DOMなしで直接操作でき、プロパティの変更も宣言的に反映されます。",
     },
     {
-      title: "きめ細やかなリアクティビティ",
+      title: "きめ細かなリアクティビティ",
       description:
         "SolidJSのSignalでゲーム状態を管理できます。必要な箇所だけ更新可能で、不要な再レンダリングはありません。",
     },
@@ -71,7 +71,7 @@ const i18n: Record<string, { title: string; description: string }[]> = {
 const features = i18n[locale] ?? i18n.en;
 ---
 
-<div class="features">
+<div class="features not-content">
   {
     features.map((f) => (
       <div class="feature-card">
