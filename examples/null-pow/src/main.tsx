@@ -230,66 +230,68 @@ function GameInput(props: {
   onTap: () => void;
 }) {
   const scene = useScene();
+  const canvas = scene.game.canvas;
 
-  // Keyboard (may be null on mobile devices)
-  const kb = scene.input.keyboard;
-  if (kb) {
-    kb.on("keydown-LEFT", props.onLeft);
-    kb.on("keydown-RIGHT", props.onRight);
-    kb.on("keydown-UP", props.onUp);
-    kb.on("keydown-DOWN", props.onDown);
-    kb.on("keydown-SPACE", props.onSpace);
-  }
+  // ── Keyboard: DOM-level listener with preventDefault to block page scroll ──
+  const handleKeyDown = (e: KeyboardEvent) => {
+    switch (e.code) {
+      case "ArrowLeft":  e.preventDefault(); props.onLeft(); break;
+      case "ArrowRight": e.preventDefault(); props.onRight(); break;
+      case "ArrowUp":    e.preventDefault(); props.onUp(); break;
+      case "ArrowDown":  e.preventDefault(); props.onDown(); break;
+      case "Space":      e.preventDefault(); props.onSpace(); break;
+    }
+  };
+  document.addEventListener("keydown", handleKeyDown);
 
-  // Pointer (works on both desktop and mobile — registered directly on scene)
-  scene.input.on("pointerdown", props.onTap);
+  // ── Tap / click: DOM-level listeners on canvas (bypasses Phaser input system) ──
+  // Both pointerdown and touchstart for maximum compatibility:
+  // - pointerdown: works on desktop (click) and most mobile browsers
+  // - touchstart: fallback for mobile browsers that don't fire pointerdown on canvas
+  canvas.addEventListener("pointerdown", () => { props.onTap(); });
+  canvas.addEventListener("touchstart", () => { props.onTap(); }, { passive: true });
+
+  // ── Swipe: direction input via touch gestures ──
+  installSwipeHandler(canvas, {
+    onLeft: props.onLeft,
+    onRight: props.onRight,
+    onUp: props.onUp,
+    onDown: props.onDown,
+  });
 
   return null;
 }
 
 // ============================================================
-// Swipe / tap detection for mobile (DOM-level touch events)
+// Swipe detection for mobile (DOM-level touch events on canvas)
 // ============================================================
 
 const SWIPE_THRESHOLD = 20; // minimum px to count as swipe
-const TAP_THRESHOLD = 10;   // max px movement for a tap
-const TAP_MAX_MS = 300;     // max duration for a tap
 
-function installTouchHandler(
-  container: HTMLElement,
+function installSwipeHandler(
+  target: HTMLElement,
   callbacks: {
     onLeft: () => void;
     onRight: () => void;
     onUp: () => void;
     onDown: () => void;
-    onTap: () => void;
   },
 ) {
   let startX = 0;
   let startY = 0;
-  let startTime = 0;
 
-  container.addEventListener("touchstart", (e: TouchEvent) => {
+  target.addEventListener("touchstart", (e: TouchEvent) => {
     const t = e.touches[0];
     startX = t.clientX;
     startY = t.clientY;
-    startTime = performance.now();
   }, { passive: true });
 
-  container.addEventListener("touchend", (e: TouchEvent) => {
+  target.addEventListener("touchend", (e: TouchEvent) => {
     const t = e.changedTouches[0];
     const dx = t.clientX - startX;
     const dy = t.clientY - startY;
     const dist = Math.sqrt(dx * dx + dy * dy);
-    const elapsed = performance.now() - startTime;
 
-    // Tap detection
-    if (dist < TAP_THRESHOLD && elapsed < TAP_MAX_MS) {
-      callbacks.onTap();
-      return;
-    }
-
-    // Swipe detection
     if (dist < SWIPE_THRESHOLD) return;
 
     if (Math.abs(dx) > Math.abs(dy)) {
@@ -478,24 +480,6 @@ function App() {
     if (p === "win") return ["GARBAGE COLLECTED!", "#00ff88", `score: ${score()} — all data recovered`] as const;
     return null;
   };
-
-  // ── Touch handler (installed on DOM container for immediate response) ──
-  if (isTouchDevice) {
-    const container = document.getElementById("game-container");
-    if (container) {
-      installTouchHandler(container, {
-        onLeft: () => { touchStartCount++; pNextDir = 2; },
-        onRight: () => { touchStartCount++; pNextDir = 0; },
-        onUp: () => { touchStartCount++; pNextDir = 3; },
-        onDown: () => { touchStartCount++; pNextDir = 1; },
-        onTap: () => {
-          touchStartCount++;
-          const p = phase();
-          if (p === "ready" || p === "dead" || p === "win") startGame();
-        },
-      });
-    }
-  }
 
   // D-pad active direction signal
   const [dpadDir, setDpadDir] = createSignal(0);
