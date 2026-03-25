@@ -5,6 +5,10 @@ description: Solidionの組み込みコンポーネント
 
 SolidionはPhaserのゲームライフサイクルを管理するための高レベルコンポーネントを提供します。
 
+```tsx
+import { Game, Scene, Preload, Overlay, GameLoop, Show, For, Index } from "solidion";
+```
+
 ## Game
 
 Phaserゲームインスタンスを作成するルートコンポーネントです。

@@ -5,6 +5,10 @@ description: Built-in Solidion components
 
 Solidion provides high-level components for managing Phaser's game lifecycle.
 
+```tsx
+import { Game, Scene, Preload, Overlay, GameLoop, Show, For, Index } from "solidion";
+```
+
 ## Game
 
 The root component that creates a Phaser game instance.

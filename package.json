@@ -15,6 +15,9 @@
     },
     "./debug": {
       "import": "./src/debug/index.ts"
+    },
+    "./renderer": {
+      "import": "./src/renderer.ts"
     }
   },
   "scripts": {

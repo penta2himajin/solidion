@@ -57,14 +57,16 @@ solidion/
     core/           # Renderer internals: meta, props, events, texture, scene-stack, frame, sync
     hooks/          # L1a/L1b hooks: useTween, useSpring, useStateMachine, etc.
     behaviors/      # L1c composition components: SpringBehavior, OscillateBehavior, etc.
-    components/     # Game, Scene, Preload, Overlay
+    components/     # Game, Scene, Preload, Overlay, GameLoop, Show, For
+    ecs/            # Data-driven ECS: pure step functions + System component
+    debug/          # Dev-only utilities: inspectBindings, profiling, expose
     renderer.ts     # solid-js/universal createRenderer implementation
     contexts.ts     # Solid contexts (Game, Scene, FrameManager, ParentNode)
     types.ts        # JSX IntrinsicElements type definitions
-    index.ts        # Public API
-  tests/            # Unit tests (79) + integration tests (13) + component tests (9)
+    index.ts        # Public API (L0–L1c)
+  tests/            # 443 tests across 15 suites
   docs/             # Design specification
-  examples/         # Runnable demos
+  examples/         # Runnable demos (breakout, null-pow, floppy-heads, nadion-defense, aquarium)
 ```
 
 ## Testing
@@ -74,20 +76,25 @@ npm install
 npm test
 ```
 
-101 tests across 10 suites:
+443 tests across 15 suites:
 
 | Suite | Tests | Scope |
 |---|---|---|
+| renderer | 110 | Renderer logic (mock Phaser) |
+| hooks | 107 | State machine, spring, tween, sequence, etc. |
+| props | 48 | Property application & composition |
+| ecs | 38 | Pure step functions & System component |
+| texture | 29 | Texture auto-loading |
+| components | 18 | Sync, reapplyProp, preload |
+| visibility | 16 | Recursive visibility toggling |
+| debug | 14 | Debug utilities & profiling |
+| integration | 13 | Real Solid reactivity + renderer |
+| contexts | 12 | Context providers & accessors |
 | meta | 11 | Metadata & delta system |
 | events | 9 | Event name resolution |
-| props | 14 | Property application & composition |
-| texture | 9 | Texture auto-loading |
+| store-compat | 8 | SolidJS store compatibility |
 | scene-stack | 5 | Scene stack management |
 | frame | 5 | Frame callback lifecycle |
-| renderer | 12 | Renderer logic (mock Phaser) |
-| hooks | 14 | State machine & sequence logic |
-| components | 9 | Sync, reapplyProp, preload |
-| **integration** | **13** | **Real Solid reactivity + renderer** |
 
 ## Entry Points
 
@@ -124,6 +131,10 @@ See [docs/solidion-spec.md](docs/solidion-spec.md) for the full design specifica
 See [examples/](examples/) for runnable demos.
 
 - **[Breakout](examples/breakout/)** — Block breaker game demonstrating reactive signals, frame-loop physics, batch updates, and conditional state
+- **[Null Pow!](examples/null-pow/)** — Pac-Man-style maze game with ghost AI, useOverlap collision, and useScene keyboard input
+- **[Floppy Heads](examples/floppy-heads/)** — Flappy Bird-style game with procedural pipe generation and score tracking
+- **[Nadion Defense](examples/nadion-defense/)** — Space Invaders-style tower defense with 40 reactive enemies and projectile pools
+- **[Aquarium](examples/aquarium/)** — Hybrid ECS + hooks demo with fish, food, bubbles, jellyfish, and seaweed
 
 ## Why "Solidion"?
 
