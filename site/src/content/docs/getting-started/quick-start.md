@@ -37,15 +37,18 @@ function App() {
 }
 ```
 
-## 2. Render
+## 2. Mount
 
 ```tsx
-import { render } from "solidion";
+import { createRoot } from "solid-js";
 
-render(() => <App />, document.getElementById("game")!);
+createRoot(() => {
+  const el = App();
+  document.getElementById("game")?.appendChild(el);
+});
 ```
 
-That's it! The score updates reactively when you click the star — no re-rendering of the entire scene.
+That's it! The `<Game>` component boots Phaser internally and returns an HTMLElement. The score updates reactively when you click the star — no re-rendering of the entire scene.
 
 ## Next Steps
 

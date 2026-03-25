@@ -11,18 +11,13 @@
 
 import { createSignal, createRoot, batch } from "solid-js";
 import { createStore, produce } from "solid-js/store";
-import { Game } from "solidion/components/Game";
-import { GameLoop } from "solidion/components/GameLoop";
-import { Show } from "solidion/components/Show";
-import { Scene } from "solidion/components/Scene";
-import { Preload } from "solidion/components/Preload";
-import { useStateMachine } from "solidion/hooks/useStateMachine";
-import { useSpring } from "solidion/hooks/useSpring";
-import { useOscillation } from "solidion/hooks/useOscillation";
-import { SpringBehavior } from "solidion/behaviors";
-import { useScene } from "solidion";
-import { System, forActive } from "solidion/ecs";
 import {
+  Game, GameLoop, Show, Scene, Preload,
+  useStateMachine, useSpring, useOscillation,
+  SpringBehavior, useScene,
+} from "solidion";
+import {
+  System, forActive,
   springStep, velocityStep, followStep, fsmSend,
   tweenStep, oscillationStep,
 } from "solidion/ecs";

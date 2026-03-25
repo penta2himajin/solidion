@@ -15,7 +15,10 @@ export default defineConfig({
   ],
   resolve: {
     alias: {
-      "solidion": resolve(__dirname, "../../src"),
+      "solidion/ecs": resolve(__dirname, "../../src/ecs/index.ts"),
+      "solidion/core": resolve(__dirname, "../../src/core/index.ts"),
+      "solidion/debug": resolve(__dirname, "../../src/debug/index.ts"),
+      "solidion": resolve(__dirname, "../../src/index.ts"),
       // Deduplicate solid-js: ensure both example and library code use the
       // same instance, AND use the browser build (not server/SSR).
       "solid-js/universal": resolve(rootModules, "solid-js/universal/dist/universal.js"),

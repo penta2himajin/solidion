@@ -37,15 +37,18 @@ function App() {
 }
 ```
 
-## 2. レンダリング
+## 2. マウント
 
 ```tsx
-import { render } from "solidion";
+import { createRoot } from "solid-js";
 
-render(() => <App />, document.getElementById("game")!);
+createRoot(() => {
+  const el = App();
+  document.getElementById("game")?.appendChild(el);
+});
 ```
 
-これだけです！星をクリックするとスコアがリアクティブに更新されます — シーン全体の再レンダリングはありません。
+これだけです！`<Game>`コンポーネントがPhaserを内部で起動し、HTMLElementを返します。星をクリックするとスコアがリアクティブに更新されます — シーン全体の再レンダリングはありません。
 
 ## 次のステップ
 

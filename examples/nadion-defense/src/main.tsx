@@ -16,11 +16,7 @@
  */
 
 import { createSignal, createMemo, batch, createRoot, createEffect } from "solid-js";
-import { Game } from "solidion/components/Game";
-import { GameLoop } from "solidion/components/GameLoop";
-import { Show } from "solidion/components/Show";
-import { Index } from "solidion/components/For";
-import { useScene } from "solidion/contexts";
+import { Game, GameLoop, Show, Index, useScene } from "solidion";
 import * as debug from "solidion/debug";
 import Phaser from "phaser";
 

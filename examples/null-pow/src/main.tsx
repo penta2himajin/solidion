@@ -17,11 +17,7 @@
 
 import Phaser from "phaser";
 import { createRoot, createSignal, createMemo, batch } from "solid-js";
-import { Game } from "solidion/components/Game";
-import { GameLoop } from "solidion/components/GameLoop";
-import { Show } from "solidion/components/Show";
-import { useScene } from "solidion/contexts";
-import { useOverlap } from "solidion/hooks/useOverlap";
+import { Game, GameLoop, Show, useScene, useOverlap } from "solidion";
 import * as debug from "solidion/debug";
 
 debug.enable();

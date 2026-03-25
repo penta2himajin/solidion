@@ -48,11 +48,13 @@ const { state, send } = useStateMachine({
 });
 ```
 
-## useFrame
+## useFrame (solidion/core)
 
-Per-frame update loop integrated with SolidJS lifecycle.
+Per-frame update loop integrated with SolidJS lifecycle. Available from `solidion/core` since it requires frame-aware thinking.
 
 ```tsx
+import { useFrame } from "solidion/core";
+
 useFrame((time, delta) => {
   setX((x) => x + speed * delta);
 });
