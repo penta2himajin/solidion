@@ -1,8 +1,8 @@
 ---
 import { Code } from "@astrojs/starlight/components";
 
-const code = `import { render } from "solidion";
-import { createSignal } from "solid-js";
+const code = `import { Game, Scene } from "solidion";
+import { createSignal, createRoot } from "solid-js";
 
 function MyGame() {
   const [x, setX] = createSignal(400);
@@ -23,7 +23,11 @@ function MyGame() {
       </Scene>
     </Game>
   );
-}`;
+}
+
+createRoot(() => {
+  document.getElementById("game")?.appendChild(MyGame());
+});`;
 ---
 
 <div class="code-example">

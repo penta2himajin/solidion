@@ -48,11 +48,13 @@ const { state, send } = useStateMachine({
 });
 ```
 
-## useFrame
+## useFrame (solidion/core)
 
-SolidJSのライフサイクルと統合されたフレームごとの更新ループ。
+SolidJSのライフサイクルと統合されたフレームごとの更新ループ。フレーム単位の思考が必要なため、`solidion/core`からインポートします。
 
 ```tsx
+import { useFrame } from "solidion/core";
+
 useFrame((time, delta) => {
   setX((x) => x + speed * delta);
 });

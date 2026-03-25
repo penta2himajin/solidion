@@ -15,9 +15,7 @@
  */
 
 import { createSignal, batch, createRoot, onCleanup } from "solid-js";
-import { Game } from "solidion/components/Game";
-import { GameLoop } from "solidion/components/GameLoop";
-import { Show } from "solidion/components/Show";
+import { Game, GameLoop, Show } from "solidion";
 import * as debug from "solidion/debug";
 import Phaser from "phaser";
 

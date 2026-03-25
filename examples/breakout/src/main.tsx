@@ -13,10 +13,7 @@
  */
 
 import { createSignal, createMemo, batch, createRoot } from "solid-js";
-import { Game } from "solidion/components/Game";
-import { GameLoop } from "solidion/components/GameLoop";
-import { Show } from "solidion/components/Show";
-import { Index } from "solidion/components/For";
+import { Game, GameLoop, Show, Index } from "solidion";
 import * as debug from "solidion/debug";
 import Phaser from "phaser";
 

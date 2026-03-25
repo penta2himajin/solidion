@@ -89,24 +89,30 @@ npm test
 | components | 9 | Sync, reapplyProp, preload |
 | **integration** | **13** | **Real Solid reactivity + renderer** |
 
-## Exports
+## Entry Points
+
+Solidion follows SolidJS's convention of splitting entry points by paradigm boundary.
 
 ```ts
-// Components
-import { Game, Scene, Preload, Overlay } from "solidion";
-
-// Hooks
-import { useFrame, useTime, useTween, useStateMachine, useSequence } from "solidion";
+// solidion — Daily API (L0–L1c). Most games only need this.
+import { Game, Scene, Preload, Overlay, GameLoop } from "solidion";
+import { Show, For, Index } from "solidion";
+import { useGame, useScene, useParentNode } from "solidion";
+import { useTween, useStateMachine, useSequence, useOverlap } from "solidion";
 import { useSpring, useFollow, useOscillation, useVelocity } from "solidion";
-
-// Behavior components (L1c)
 import { SpringBehavior, OscillateBehavior, FollowBehavior, VelocityBehavior } from "solidion";
 
-// Contexts
-import { useGame, useScene, useParentNode } from "solidion";
+// solidion/ecs — Data-driven ECS pattern (createStore + pure step functions + System)
+import { System, createSystemFactory, forActive } from "solidion/ecs";
+import { springStep, velocityStep, followStep, fsmStep, fsmSend, tweenStep, tweenLerp } from "solidion/ecs";
 
-// L4 utilities
-import { getCurrentScene, pushScene, popScene, addDelta, removeDelta } from "solidion";
+// solidion/core — Frame-aware escape hatch (L3–L4)
+import { useFrame, useTime, render, effect, memo } from "solidion/core";
+import { addDelta, removeDelta, getMeta, composeProp } from "solidion/core";
+import { pushScene, popScene, getCurrentScene } from "solidion/core";
+
+// solidion/debug — Dev-only utilities
+import * as debug from "solidion/debug";
 ```
 
 ## Documentation
