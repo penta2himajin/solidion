@@ -1,8 +1,8 @@
 /**
- * Solidion Example: Aquarium (Hybrid ECS + Hooks)
+ * Solidion Example: Aquarium (Hybrid RECS + Hooks)
  *
  * Interactive aquarium demonstrating the hybrid architecture:
- *  - ECS (createStore + System): Fish, Food, Bubbles, Fry — bulk entities with step functions
+ *  - RECS (createStore + System): Fish, Food, Bubbles, Fry — bulk entities with step functions
  *  - Hooks (unchanged): Jellyfish, Seaweed, Stats Panel, SceneEffects — few/unique entities
  *  - L0: JSX, <Show>, <GameLoop>, <Game> input
  *  - L2: <Preload> with fallback loading screen
@@ -20,8 +20,8 @@ import {
   System, forActive,
   springStep, velocityStep, followStep, fsmSend,
   tweenStep, oscillationStep,
-} from "solidion/ecs";
-import type { FSMStateConfig } from "solidion/ecs";
+} from "solidion/recs";
+import type { FSMStateConfig } from "solidion/recs";
 import * as debug from "solidion/debug";
 import Phaser from "phaser";
 
@@ -49,7 +49,7 @@ const FOOD_NEAR = 150, FOOD_EAT = 20;
 const FISH_COLORS = [0xff6b6b, 0x4ecdc4, 0xffe66d, 0xc084fc, 0xfb923c];
 
 // ══════════════════════════════════════════════════
-// ECS Store Types & Initialization
+// RECS Store Types & Initialization
 // ══════════════════════════════════════════════════
 
 interface FishEntity {
@@ -260,7 +260,7 @@ function SceneEffects() {
 }
 
 // ══════════════════════════════════════════════════
-// ECS Renderers (read from stores)
+// RECS Renderers (read from stores)
 // ══════════════════════════════════════════════════
 
 function FishRenderer(props: { onSelect: (s: number) => void }) {
@@ -656,7 +656,7 @@ function App() {
 
       <SceneEffects />
 
-      {/* ── ECS Systems (execution order = JSX order) ── */}
+      {/* ── RECS Systems (execution order = JSX order) ── */}
       <System update={fishFSMUpdate} />
       <System update={fishHungerUpdate} />
       <System update={fishFoodOverlapUpdate} />
@@ -685,7 +685,7 @@ function App() {
       <Jellyfish baseX={520} baseY={150} />
       <Jellyfish baseX={120} baseY={200} />
 
-      {/* ECS Renderers */}
+      {/* RECS Renderers */}
       <BubbleRenderer />
       <FoodRenderer />
       <FishRenderer onSelect={selectFish} />

@@ -29,7 +29,7 @@ import {
   oscillationStep,
   followStep,
   velocityStep, type VelocityState,
-} from "../ecs/steps";
+} from "../recs/steps";
 
 let _behaviorId = 0;
 function nextBehaviorId(): string {

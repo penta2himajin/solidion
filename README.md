@@ -43,6 +43,19 @@ No `preload`. No `create`. No `update`. No `scene.add`. No `setInteractive`. No 
 
 Most games stay in L0–L1. `useFrame` (L3) is the escape hatch, not the default.
 
+## RECS — Reactive ECS
+
+Solidion includes **RECS** (`solidion/recs`), a Reactive Entity Component System for managing many entities of the same type (10+ fish, 30+ bullets).
+
+Traditional ECS runs every system over every entity every frame — O(N) per system regardless of whether anything changed. RECS is different:
+
+- **Reactive data → display**: `createStore` changes propagate automatically to Phaser GameObjects via SolidJS's fine-grained reactivity. No manual sync loop.
+- **Reactive index**: `createIndex` tracks which entities match a condition (e.g. "hungry fish") with O(1) updates per state change, so systems iterate only relevant entities.
+- **Phased execution**: Systems declare when they run within a frame — `"pre"` (react to previous frame's state changes), `"main"` (physics/timers), or `"post"` (react to physics results) — separating discrete logic from continuous integration.
+- **Shared step functions**: The same pure algorithms (`springStep`, `fsmStep`, etc.) power both RECS systems and L1 hooks, extracted as stateless functions for bulk processing.
+
+RECS and hooks coexist: use hooks for few unique entities (player, UI), RECS for many uniform entities (enemies, particles).
+
 ## Install
 
 ```bash
@@ -58,7 +71,7 @@ solidion/
     hooks/          # L1a/L1b hooks: useTween, useSpring, useStateMachine, etc.
     behaviors/      # L1c composition components: SpringBehavior, OscillateBehavior, etc.
     components/     # Game, Scene, Preload, Overlay, GameLoop, Show, For
-    ecs/            # Reactive ECS: pure step functions + phased Systems + reactive index
+    recs/           # RECS (Reactive ECS): pure step functions + phased Systems + reactive index
     debug/          # Dev-only utilities: inspectBindings, profiling, expose
     renderer.ts     # solid-js/universal createRenderer implementation
     contexts.ts     # Solid contexts (Game, Scene, FrameManager, ParentNode)
@@ -83,7 +96,7 @@ npm test
 | renderer | 110 | Renderer logic (mock Phaser) |
 | hooks | 107 | State machine, spring, tween, sequence, etc. |
 | props | 48 | Property application & composition |
-| ecs | 44 | Pure step functions, phased Systems & reactive index |
+| recs | 44 | Pure step functions, phased Systems & reactive index |
 | texture | 29 | Texture auto-loading |
 | components | 18 | Sync, reapplyProp, preload |
 | visibility | 16 | Recursive visibility toggling |
@@ -109,9 +122,9 @@ import { useTween, useStateMachine, useSequence, useOverlap } from "solidion";
 import { useSpring, useFollow, useOscillation, useVelocity } from "solidion";
 import { SpringBehavior, OscillateBehavior, FollowBehavior, VelocityBehavior } from "solidion";
 
-// solidion/ecs — Reactive ECS pattern (createStore + pure step functions + phased Systems + reactive index)
-import { System, createSystemFactory, forActive, createIndex } from "solidion/ecs";
-import { springStep, velocityStep, followStep, fsmStep, fsmSend, tweenStep, tweenLerp } from "solidion/ecs";
+// solidion/recs — RECS: Reactive ECS (createStore + pure step functions + phased Systems + reactive index)
+import { System, createSystemFactory, forActive, createIndex } from "solidion/recs";
+import { springStep, velocityStep, followStep, fsmStep, fsmSend, tweenStep, tweenLerp } from "solidion/recs";
 
 // solidion/core — Frame-aware escape hatch (L3–L4)
 import { useFrame, useTime, render, effect, memo } from "solidion/core";
@@ -134,7 +147,7 @@ See [examples/](examples/) for runnable demos.
 - **[Null Pow!](examples/null-pow/)** — Pac-Man-style maze game with ghost AI, useOverlap collision, and useScene keyboard input
 - **[Floppy Heads](examples/floppy-heads/)** — Flappy Bird-style game with procedural pipe generation and score tracking
 - **[Nadion Defense](examples/nadion-defense/)** — Space Invaders-style tower defense with 40 reactive enemies and projectile pools
-- **[Aquarium](examples/aquarium/)** — Hybrid ECS + hooks demo with fish, food, bubbles, jellyfish, and seaweed
+- **[Aquarium](examples/aquarium/)** — Hybrid RECS + hooks demo with fish, food, bubbles, jellyfish, and seaweed
 
 ## Why "Solidion"?
 

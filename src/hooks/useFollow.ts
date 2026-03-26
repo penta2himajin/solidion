@@ -1,6 +1,6 @@
 import { createSignal, type Accessor } from "solid-js";
 import { useFrame } from "./useFrame";
-import { followStep } from "../ecs/steps";
+import { followStep } from "../recs/steps";
 
 export interface FollowConfig {
   target: Accessor<{ x: number; y: number }>;

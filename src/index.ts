@@ -4,7 +4,7 @@
  *
  * This is the main entry point (L0–L1c). Most games need only this.
  * For frame-aware escape hatches, see "solidion/core".
- * For reactive ECS, see "solidion/ecs".
+ * For reactive ECS, see "solidion/recs".
  * For debug utilities, see "solidion/debug".
  */
 

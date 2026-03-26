@@ -1,6 +1,6 @@
 import { createSignal, type Accessor } from "solid-js";
 import { useFrame } from "./useFrame";
-import { velocityStep, type VelocityState } from "../ecs/steps";
+import { velocityStep, type VelocityState } from "../recs/steps";
 
 export interface VelocityConfig {
   initial?: { x: number; y: number };

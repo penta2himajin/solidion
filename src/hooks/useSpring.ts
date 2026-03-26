@@ -1,6 +1,6 @@
 import { createSignal, type Accessor } from "solid-js";
 import { useFrame } from "./useFrame";
-import { springStep, type SpringState } from "../ecs/steps";
+import { springStep, type SpringState } from "../recs/steps";
 
 export interface SpringConfig {
   target: Accessor<{ x: number; y: number }>;

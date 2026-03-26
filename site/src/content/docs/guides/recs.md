@@ -1,9 +1,11 @@
 ---
-title: ECS (Entity Component System)
-description: Data-driven pattern for bulk entity processing
+title: RECS (Reactive ECS)
+description: Reactive Entity Component System for bulk entity processing
 ---
 
-The ECS pattern (`solidion/ecs`) is for games with many entities of the same type — 10+ fish, 30+ bullets, etc. It combines SolidJS `createStore` with pure step functions, phased `System` components, and reactive index sets.
+RECS (`solidion/recs`) is Solidion's Reactive Entity Component System — for games with many entities of the same type (10+ fish, 30+ bullets, etc.).
+
+Unlike traditional ECS where every system imperatively scans all entities every frame, RECS leverages SolidJS's fine-grained reactivity so that store changes propagate automatically to rendering, `createIndex` tracks entity state at O(1) per change, and phased Systems separate discrete reactions from continuous physics.
 
 ```tsx
 import {
@@ -11,22 +13,22 @@ import {
   springStep, velocityStep, followStep,
   oscillationStep, fsmStep, fsmSend,
   tweenStep, tweenLerp,
-} from "solidion/ecs";
+} from "solidion/recs";
 ```
 
-## When to use ECS vs Hooks
+## When to use RECS vs Hooks
 
 | Pattern | When |
 |---------|------|
 | **Hooks** (`useSpring`, `useStateMachine`, ...) | Few entities (1–5), unique complex behavior per entity |
-| **ECS** (`System` + step functions) | Many entities (10+), shared behavior definitions, single store |
+| **RECS** (`System` + step functions) | Many entities (10+), shared behavior definitions, single store |
 
 ## Pure Step Functions
 
 Step functions are the same algorithms used inside `useSpring`, `useOscillation`, etc., extracted as pure functions for bulk processing. They take current state + config + delta time, and return the next state.
 
 ```tsx
-import { springStep, type SpringState, type SpringConfig } from "solidion/ecs";
+import { springStep, type SpringState, type SpringConfig } from "solidion/recs";
 
 const next: SpringState = springStep(
   { x: 0, y: 0, vx: 0, vy: 0 },
@@ -111,4 +113,4 @@ forActive(store.entities, (entity, index) => {
 
 ## Full Example
 
-See [examples/aquarium/](https://github.com/penta2himajin/solidion/tree/main/examples/aquarium) for a complete hybrid ECS + hooks demo with fish, food, bubbles, and more.
+See [examples/aquarium/](https://github.com/penta2himajin/solidion/tree/main/examples/aquarium) for a complete hybrid RECS + hooks demo with fish, food, bubbles, and more.
