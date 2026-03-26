@@ -40,6 +40,7 @@ export default defineConfig({
             { slug: "guides/components" },
             { slug: "guides/hooks" },
             { slug: "guides/behaviors" },
+            { slug: "guides/ecs" },
           ],
         },
         {
