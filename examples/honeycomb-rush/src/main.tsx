@@ -107,65 +107,97 @@ function px(ctx: CanvasRenderingContext2D, x: number, y: number, color: string) 
   ctx.fillRect(x, y, 1, 1);
 }
 
+// Flat-top hexagon path within a 48x48 cell.
+// Vertices: top-left, top-right (flat top), right, bottom-right, bottom-left (flat bottom), left
+function hexPath(ctx: CanvasRenderingContext2D, inset = 0) {
+  const w = 48, h = 48;
+  const q = 12 - inset;        // horizontal inset for angled edges (~25% of width)
+  const t = inset;              // top/bottom inset
+  const b = h - inset;
+  const l = inset;
+  const r = w - inset;
+  ctx.beginPath();
+  ctx.moveTo(q + inset, t);          // top-left
+  ctx.lineTo(r - q + inset, t);      // top-right  (flat top edge)
+  ctx.lineTo(r, h / 2);              // right point
+  ctx.lineTo(r - q + inset, b);      // bottom-right
+  ctx.lineTo(q + inset, b);          // bottom-left (flat bottom edge)
+  ctx.lineTo(l, h / 2);              // left point
+  ctx.closePath();
+}
+
+function fillHex(ctx: CanvasRenderingContext2D, color: string, inset = 0) {
+  ctx.fillStyle = color;
+  hexPath(ctx, inset);
+  ctx.fill();
+}
+
+function strokeHex(ctx: CanvasRenderingContext2D, color: string, width: number, inset = 0) {
+  ctx.strokeStyle = color;
+  ctx.lineWidth = width;
+  hexPath(ctx, inset);
+  ctx.stroke();
+}
+
 function generateAllTextures(scene: Phaser.Scene) {
-  // Hex cell (48x48, honeycomb pattern)
+  // Ground cell — hex with honeycomb color
   createPixelTexture(scene, "cell-ground", 48, 48, (ctx) => {
-    ctx.fillStyle = "#d4a030";
-    ctx.fillRect(0, 0, 48, 48);
-    ctx.fillStyle = "#c49020";
-    ctx.fillRect(1, 1, 46, 46);
-    ctx.fillStyle = "#dab040";
-    ctx.fillRect(4, 4, 40, 40);
-    // Hex border hint
-    ctx.fillStyle = "#b08020";
-    for (let i = 0; i < 8; i++) { px(ctx, i, 0, "#a07010"); px(ctx, 47 - i, 0, "#a07010"); }
-    for (let i = 0; i < 8; i++) { px(ctx, i, 47, "#a07010"); px(ctx, 47 - i, 47, "#a07010"); }
+    fillHex(ctx, "#dab040");
+    fillHex(ctx, "#c8a028", 3);
+    strokeHex(ctx, "#a07010", 2);
   });
 
+  // Wall cell — dark hex
   createPixelTexture(scene, "cell-wall", 48, 48, (ctx) => {
-    ctx.fillStyle = "#5a3a10";
-    ctx.fillRect(0, 0, 48, 48);
-    ctx.fillStyle = "#4a2a08";
-    ctx.fillRect(2, 2, 44, 44);
+    fillHex(ctx, "#4a2a08");
+    fillHex(ctx, "#3a1a04", 3);
+    strokeHex(ctx, "#2a0a00", 2);
   });
 
+  // High ground cell — elevated hex with dots
   createPixelTexture(scene, "cell-high", 48, 48, (ctx) => {
-    ctx.fillStyle = "#e8c050";
-    ctx.fillRect(0, 0, 48, 48);
-    ctx.fillStyle = "#f0d060";
-    ctx.fillRect(2, 2, 44, 44);
-    // Elevated marker dots
+    fillHex(ctx, "#f0d060");
+    fillHex(ctx, "#e0c048", 3);
+    strokeHex(ctx, "#b09020", 2);
+    // Elevated marker dots (inside hex)
     ctx.fillStyle = "#c8a030";
-    for (let y = 8; y < 40; y += 8) for (let x = 8; x < 40; x += 8) px(ctx, x, y, "#c8a030");
+    for (let y = 14; y < 36; y += 7) {
+      for (let x = 16; x < 32; x += 7) {
+        ctx.fillRect(x, y, 2, 2);
+      }
+    }
   });
 
+  // Nest cell — golden hex with heart emblem
   createPixelTexture(scene, "cell-nest", 48, 48, (ctx) => {
-    ctx.fillStyle = "#ffdd44";
-    ctx.fillRect(0, 0, 48, 48);
-    ctx.fillStyle = "#ffee66";
-    ctx.fillRect(4, 4, 40, 40);
-    // Heart/star shape hint
+    fillHex(ctx, "#ffee66");
+    fillHex(ctx, "#ffdd44", 3);
+    strokeHex(ctx, "#cc9900", 2);
+    // Heart shape at center
     ctx.fillStyle = "#ff8800";
-    for (let x = 20; x < 28; x++) px(ctx, x, 16, "#ff8800");
-    for (let x = 18; x < 30; x++) px(ctx, x, 18, "#ff8800");
-    for (let x = 16; x < 32; x++) px(ctx, x, 20, "#ff8800");
-    for (let x = 16; x < 32; x++) px(ctx, x, 22, "#ff8800");
-    for (let x = 18; x < 30; x++) px(ctx, x, 24, "#ff8800");
-    for (let x = 20; x < 28; x++) px(ctx, x, 26, "#ff8800");
-    for (let x = 22; x < 26; x++) px(ctx, x, 28, "#ff8800");
+    const cx = 24, cy = 22;
+    // Simple pixel-art heart
+    for (const [dx, dy] of [
+      [-3,-2],[-2,-3],[-1,-3],[0,-2],[1,-3],[2,-3],[3,-2],
+      [-4,-1],[-3,-1],[-2,-1],[-1,-1],[0,-1],[1,-1],[2,-1],[3,-1],[4,-1],
+      [-4,0],[-3,0],[-2,0],[-1,0],[0,0],[1,0],[2,0],[3,0],[4,0],
+      [-3,1],[-2,1],[-1,1],[0,1],[1,1],[2,1],[3,1],
+      [-2,2],[-1,2],[0,2],[1,2],[2,2],
+      [-1,3],[0,3],[1,3],
+      [0,4],
+    ]) ctx.fillRect(cx + dx, cy + dy, 1, 1);
   });
 
+  // Spawn cell — red-tinted hex with arrow
   createPixelTexture(scene, "cell-spawn", 48, 48, (ctx) => {
-    ctx.fillStyle = "#803030";
-    ctx.fillRect(0, 0, 48, 48);
-    ctx.fillStyle = "#904040";
-    ctx.fillRect(4, 4, 40, 40);
-    // Arrow hint
+    fillHex(ctx, "#904040");
+    fillHex(ctx, "#803030", 3);
+    strokeHex(ctx, "#602020", 2);
+    // Arrow pointing inward
     ctx.fillStyle = "#ff6060";
-    for (let x = 16; x < 32; x++) px(ctx, x, 22, "#ff6060");
-    for (let x = 16; x < 32; x++) px(ctx, x, 24, "#ff6060");
-    px(ctx, 28, 18, "#ff6060"); px(ctx, 30, 20, "#ff6060");
-    px(ctx, 28, 28, "#ff6060"); px(ctx, 30, 26, "#ff6060");
+    for (let x = 16; x < 32; x++) ctx.fillRect(x, 23, 1, 2);
+    ctx.fillRect(28, 19, 2, 2); ctx.fillRect(30, 21, 2, 2);
+    ctx.fillRect(28, 27, 2, 2); ctx.fillRect(30, 25, 2, 2);
   });
 
   // Ant (8x8 pixel art)
