@@ -52,6 +52,7 @@ export default defineConfig({
             { slug: "examples/floppy-heads" },
             { slug: "examples/nadion-defense" },
             { slug: "examples/null-pow" },
+            { slug: "examples/honeycomb-rush" },
           ],
         },
       ],

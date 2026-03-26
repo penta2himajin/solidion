@@ -3,8 +3,9 @@ node_modules/
 .vite/
 .astro/
 
-# Exclude build output at root, but keep pre-built example demos
+# Build output
 /dist/
+site/public/examples/
 
 .env
 .env.*

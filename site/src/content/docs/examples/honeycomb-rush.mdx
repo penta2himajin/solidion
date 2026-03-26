@@ -1,0 +1,23 @@
+---
+title: "Honeycomb Rush"
+description: "Tower defense game with 100+ RECS entities"
+---
+
+import GameDemo from '../../../components/GameDemo.astro';
+
+<GameDemo src="/examples/honeycomb-rush-app/" title="Honeycomb Rush" width={640} height={480} />
+
+## About
+
+A tower defense game ("Hanikamu Rush") showcasing Solidion's RECS at scale. Defend the honeycomb nest from waves of invading bugs using worker bees, while keeping the larvae in their "hanakamu" (blushing) state.
+
+### RECS Validation Points
+
+- **createIndex**: 4 reactive index sets (walking/blocked/slowed/dying)
+- **System phases**: All three phases used — pre (unblock, slow field), main (movement, spawning, animation), post (block check, hit detection, goal check)
+- **100+ entities**: Wave 4 reaches 100+ simultaneous enemies + projectiles
+- **Hybrid architecture**: Enemies & projectiles via RECS, worker bees via hooks, larvae via Signals
+
+## Source
+
+[View on GitHub](https://github.com/penta2himajin/solidion/tree/master/examples/honeycomb-rush)
