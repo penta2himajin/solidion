@@ -11,8 +11,8 @@
     "declarationDir": "dist",
     "declaration": true,
     "sourceMap": true,
-    "skipLibCheck": true,
-    "types": ["Phaser"]
+    "skipLibCheck": true
   },
-  "include": ["src/**/*", "tests/**/*"]
+  "include": ["src/**/*", "tests/**/*"],
+  "exclude": ["tests/browser/**/*"]
 }

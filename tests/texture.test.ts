@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { parseTextureRef, urlToKey, ensureTexture, preloadAssets, applyTexture } from "../src/core/texture";
 import { MockScene, MockSprite, MockImage } from "./mocks";
 
