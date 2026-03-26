@@ -361,43 +361,74 @@ function generateAllTextures(scene: Phaser.Scene) {
     px(ctx, 5, 9, "#cc8800"); px(ctx, 6, 9, "#cc8800");
   });
 
-  // Larva (8x8)
-  createPixelTexture(scene, "larva", 8, 8, (ctx) => {
-    const body = "#fff8e0";
-    for (let x = 2; x <= 5; x++) for (let y = 1; y <= 6; y++) px(ctx, x, y, body);
-    px(ctx, 3, 1, "#ffe8c0"); px(ctx, 4, 1, "#ffe8c0");
-    // Face
-    px(ctx, 3, 2, "#333"); px(ctx, 4, 2, "#333"); // eyes
-    px(ctx, 3, 4, "#ffaaaa"); px(ctx, 4, 4, "#ffaaaa"); // blush (hanakamu)
-    px(ctx, 3, 3, "#cc8888"); px(ctx, 4, 3, "#cc8888"); // mouth (shy smile)
-    // Segments
-    px(ctx, 2, 3, "#ffe8c0"); px(ctx, 5, 3, "#ffe8c0");
-    px(ctx, 2, 5, "#ffe8c0"); px(ctx, 5, 5, "#ffe8c0");
+  // Larva — oval/elliptical body (8x12, taller than wide)
+  createPixelTexture(scene, "larva", 8, 12, (ctx) => {
+    // Oval body shape (wider in middle, tapered at top/bottom)
+    const body = "#fff8e0", shade = "#ffe8c0";
+    //         row 0:     --XX--
+    px(ctx, 3, 0, shade); px(ctx, 4, 0, shade);
+    //         row 1:    -XXXX-
+    for (let x = 2; x <= 5; x++) px(ctx, x, 1, body);
+    //         rows 2-9: XXXXXX (full width)
+    for (let y = 2; y <= 9; y++) {
+      for (let x = 1; x <= 6; x++) px(ctx, x, y, body);
+    }
+    //         row 10:   -XXXX-
+    for (let x = 2; x <= 5; x++) px(ctx, x, 10, body);
+    //         row 11:    --XX--
+    px(ctx, 3, 11, shade); px(ctx, 4, 11, shade);
+    // Segment lines (horizontal grooves)
+    for (let x = 2; x <= 5; x++) { px(ctx, x, 4, shade); px(ctx, x, 7, shade); }
+    // Face — eyes
+    px(ctx, 3, 3, "#333"); px(ctx, 5, 3, "#333");
+    // Blush (hanakamu — blushing cheeks)
+    px(ctx, 2, 5, "#ffaaaa"); px(ctx, 6, 5, "#ffaaaa");
+    px(ctx, 2, 6, "#ffaaaa"); px(ctx, 6, 6, "#ffaaaa");
+    // Shy smile
+    px(ctx, 3, 6, "#cc8888"); px(ctx, 4, 6, "#cc8888"); px(ctx, 5, 6, "#cc8888");
   });
 
-  // Larva scared (8x8)
-  createPixelTexture(scene, "larva-scared", 8, 8, (ctx) => {
-    const body = "#fff0d0";
-    for (let x = 2; x <= 5; x++) for (let y = 1; y <= 6; y++) px(ctx, x, y, body);
-    // Scared face
-    px(ctx, 3, 2, "#333"); px(ctx, 4, 2, "#333"); // eyes (wide)
-    px(ctx, 2, 2, "#333"); px(ctx, 5, 2, "#333"); // wider eyes
-    px(ctx, 3, 4, "#6688cc"); px(ctx, 4, 4, "#6688cc"); // teary
-    px(ctx, 3, 3, "#aaaaaa"); px(ctx, 4, 3, "#aaaaaa"); // worried mouth
+  // Larva scared — oval body, frightened face
+  createPixelTexture(scene, "larva-scared", 8, 12, (ctx) => {
+    const body = "#fff0d0", shade = "#ffe0b0";
+    px(ctx, 3, 0, shade); px(ctx, 4, 0, shade);
+    for (let x = 2; x <= 5; x++) px(ctx, x, 1, body);
+    for (let y = 2; y <= 9; y++) {
+      for (let x = 1; x <= 6; x++) px(ctx, x, y, body);
+    }
+    for (let x = 2; x <= 5; x++) px(ctx, x, 10, body);
+    px(ctx, 3, 11, shade); px(ctx, 4, 11, shade);
+    for (let x = 2; x <= 5; x++) { px(ctx, x, 4, shade); px(ctx, x, 7, shade); }
+    // Wide scared eyes
+    px(ctx, 2, 3, "#333"); px(ctx, 3, 3, "#333");
+    px(ctx, 5, 3, "#333"); px(ctx, 6, 3, "#333");
+    // Tear drops
+    px(ctx, 2, 5, "#6688cc"); px(ctx, 6, 5, "#6688cc");
+    // Worried mouth (open O)
+    px(ctx, 3, 6, "#aaaaaa"); px(ctx, 4, 6, "#aaaaaa"); px(ctx, 5, 6, "#aaaaaa");
+    px(ctx, 3, 7, "#aaaaaa"); px(ctx, 5, 7, "#aaaaaa");
   });
 
-  // Larva crying (8x8)
-  createPixelTexture(scene, "larva-crying", 8, 8, (ctx) => {
-    const body = "#ffe8c0";
-    for (let x = 2; x <= 5; x++) for (let y = 1; y <= 6; y++) px(ctx, x, y, body);
-    // Crying face
-    px(ctx, 3, 2, "#333"); px(ctx, 4, 2, "#333");
-    // Tears
-    px(ctx, 2, 3, "#4488ff"); px(ctx, 5, 3, "#4488ff");
-    px(ctx, 2, 4, "#4488ff"); px(ctx, 5, 4, "#4488ff");
-    // Open mouth crying
-    px(ctx, 3, 4, "#cc4444"); px(ctx, 4, 4, "#cc4444");
-    px(ctx, 3, 5, "#cc4444"); px(ctx, 4, 5, "#cc4444");
+  // Larva crying — oval body, tears streaming
+  createPixelTexture(scene, "larva-crying", 8, 12, (ctx) => {
+    const body = "#ffe8c0", shade = "#ffd8a0";
+    px(ctx, 3, 0, shade); px(ctx, 4, 0, shade);
+    for (let x = 2; x <= 5; x++) px(ctx, x, 1, body);
+    for (let y = 2; y <= 9; y++) {
+      for (let x = 1; x <= 6; x++) px(ctx, x, y, body);
+    }
+    for (let x = 2; x <= 5; x++) px(ctx, x, 10, body);
+    px(ctx, 3, 11, shade); px(ctx, 4, 11, shade);
+    for (let x = 2; x <= 5; x++) { px(ctx, x, 4, shade); px(ctx, x, 7, shade); }
+    // Squinting crying eyes
+    px(ctx, 2, 3, "#333"); px(ctx, 3, 3, "#333");
+    px(ctx, 5, 3, "#333"); px(ctx, 6, 3, "#333");
+    // Streaming tears
+    px(ctx, 1, 4, "#4488ff"); px(ctx, 1, 5, "#4488ff"); px(ctx, 1, 6, "#4488ff");
+    px(ctx, 7, 4, "#4488ff"); px(ctx, 7, 5, "#4488ff"); px(ctx, 7, 6, "#4488ff");
+    // Wide open crying mouth
+    px(ctx, 3, 6, "#cc4444"); px(ctx, 4, 6, "#cc4444"); px(ctx, 5, 6, "#cc4444");
+    px(ctx, 3, 7, "#cc4444"); px(ctx, 4, 7, "#cc4444"); px(ctx, 5, 7, "#cc4444");
   });
 
   // Projectile needle (4x4)
@@ -1527,10 +1558,12 @@ function App() {
 
   // Larvae positions (spread across nest cells)
   const larvaeData = createMemo(() => {
+    const cx = (cellToX(5, 5) + cellToX(5, 6)) / 2;
+    const cy = cellToY(5, 5);
     const positions = [
-      { x: cellToX(5, 5) - 10, y: cellToY(5, 5) },
-      { x: cellToX(5, 5) + 10, y: cellToY(5, 5) + 10 },
-      { x: cellToX(5, 6), y: cellToY(5, 6) },
+      { x: cx - 20, y: cy - 4 },
+      { x: cx,      y: cy + 6 },
+      { x: cx + 20, y: cy - 4 },
     ];
     return positions.map((pos, i) => ({
       hp: larvaHP[i],
@@ -1614,20 +1647,16 @@ function App() {
           />
         ))}
 
-        {/* Phase indicator */}
-        <Show when={isPrep()}>
-          <rectangle x={W / 2} y={H / 2 - 40} width={200} height={36}
-            fillColor={0x446622} origin={0.5} depth={25} alpha={0.9}
-            onClick={() => startWave()} />
-          <text x={W / 2} y={H / 2 - 40} text="Start Wave!"
-            fontSize={16} fontFamily="monospace" color="#88cc44" origin={0.5} depth={26} />
-        </Show>
-
-        <Show when={isInterval()}>
-          <text x={W / 2} y={H / 2 - 40}
-            text={`Next wave in ${Math.ceil(intervalTimer / 1000)}s`}
-            fontSize={14} fontFamily="monospace" color="#ccaa44" origin={0.5} depth={25} />
-        </Show>
+        {/* Phase indicator — single element, content driven by phase */}
+        <rectangle x={W / 2} y={H / 2 - 40} width={200} height={36}
+          fillColor={0x446622} origin={0.5} depth={25}
+          alpha={isPrep() ? 0.9 : 0}
+          onClick={() => { if (isPrep()) startWave(); }} />
+        <text x={W / 2} y={H / 2 - 40}
+          text={isPrep() ? "Start Wave!" : isInterval() ? `Next wave in ${Math.ceil(intervalTimer / 1000)}s` : ""}
+          fontSize={isPrep() ? 16 : 14} fontFamily="monospace"
+          color={isPrep() ? "#88cc44" : "#ccaa44"}
+          origin={0.5} depth={26} />
 
         {/* ── Bee Selection Bar ── */}
         <rectangle x={W / 2} y={barY} width={W} height={48}
@@ -1669,27 +1698,33 @@ function App() {
           );
         })}
 
-        {/* ── Selected Bee Info Panel ── */}
-        <Show when={selBee() !== null}>
-          <rectangle x={W - 80} y={H / 2} width={140} height={120}
-            fillColor={0x1a0a00} origin={0.5} depth={30} alpha={0.9} />
-          <text x={W - 80} y={H / 2 - 40}
-            text={`${selBee()!.type.toUpperCase()}`}
-            fontSize={12} fontFamily="monospace" color="#ffcc88" origin={0.5} depth={31} />
-          <text x={W - 80} y={H / 2 - 20}
-            text={`HP: ${Math.ceil(selBee()!.hp)}/${selBee()!.maxHp}`}
-            fontSize={10} fontFamily="monospace" color="#cc9944" origin={0.5} depth={31} />
-          <rectangle x={W - 80} y={H / 2 + 10} width={80} height={22}
-            fillColor={0x884422} origin={0.5} depth={31}
-            onClick={() => removeBee(selectedBeeId()!)} />
-          <text x={W - 80} y={H / 2 + 10} text="Retreat"
-            fontSize={10} fontFamily="monospace" color="#ffaaaa" origin={0.5} depth={32} />
-          <rectangle x={W - 80} y={H / 2 + 38} width={80} height={22}
-            fillColor={0x333322} origin={0.5} depth={31}
-            onClick={() => setSelectedBeeId(null)} />
-          <text x={W - 80} y={H / 2 + 38} text="Close"
-            fontSize={10} fontFamily="monospace" color="#aaaaaa" origin={0.5} depth={32} />
-        </Show>
+        {/* ── Selected Bee Info Panel (alpha-driven visibility) ── */}
+        {(() => {
+          const vis = () => selBee() !== null;
+          const a = () => vis() ? 1 : 0;
+          return (
+            <>
+              <rectangle x={W - 80} y={H / 2} width={140} height={120}
+                fillColor={0x1a0a00} origin={0.5} depth={30} alpha={vis() ? 0.9 : 0} />
+              <text x={W - 80} y={H / 2 - 40}
+                text={selBee()?.type?.toUpperCase() ?? ""}
+                fontSize={12} fontFamily="monospace" color="#ffcc88" origin={0.5} depth={31} alpha={a()} />
+              <text x={W - 80} y={H / 2 - 20}
+                text={`HP: ${Math.ceil(selBee()?.hp ?? 0)}/${selBee()?.maxHp ?? 0}`}
+                fontSize={10} fontFamily="monospace" color="#cc9944" origin={0.5} depth={31} alpha={a()} />
+              <rectangle x={W - 80} y={H / 2 + 10} width={80} height={22}
+                fillColor={0x884422} origin={0.5} depth={31} alpha={a()}
+                onClick={() => { if (vis()) removeBee(selectedBeeId()!); }} />
+              <text x={W - 80} y={H / 2 + 10} text="Retreat"
+                fontSize={10} fontFamily="monospace" color="#ffaaaa" origin={0.5} depth={32} alpha={a()} />
+              <rectangle x={W - 80} y={H / 2 + 38} width={80} height={22}
+                fillColor={0x333322} origin={0.5} depth={31} alpha={a()}
+                onClick={() => { if (vis()) setSelectedBeeId(null); }} />
+              <text x={W - 80} y={H / 2 + 38} text="Close"
+                fontSize={10} fontFamily="monospace" color="#aaaaaa" origin={0.5} depth={32} alpha={a()} />
+            </>
+          );
+        })()}
       </Show>
 
       {/* ── Victory Screen ── */}
