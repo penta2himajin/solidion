@@ -5,6 +5,11 @@ description: Solidion hooks for animations, state machines, and more
 
 Solidion provides hooks (L1a layer) that integrate Phaser features with SolidJS reactivity.
 
+```tsx
+import { useTween, useStateMachine, useSequence, useOverlap } from "solidion";  // L1a
+import { useSpring, useFollow, useOscillation, useVelocity } from "solidion";  // L1b
+```
+
 ## useTween
 
 Animate properties with Phaser tweens, controlled reactively.

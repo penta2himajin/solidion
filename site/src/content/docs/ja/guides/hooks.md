@@ -5,6 +5,11 @@ description: アニメーション、ステートマシンなどのSolidion hook
 
 SolidionはPhaserの機能をSolidJSのリアクティビティと統合するhooks（L1aレイヤー）を提供します。
 
+```tsx
+import { useTween, useStateMachine, useSequence, useOverlap } from "solidion";  // L1a
+import { useSpring, useFollow, useOscillation, useVelocity } from "solidion";  // L1b
+```
+
 ## useTween
 
 Phaserトゥイーンでプロパティをアニメーション、リアクティブに制御します。

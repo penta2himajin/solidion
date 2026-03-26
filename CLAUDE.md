@@ -34,7 +34,7 @@ src/
   contexts.ts     # Solid contexts
   types.ts        # JSX IntrinsicElements
   index.ts        # Public API
-tests/            # Unit (79) + Integration (13) + Component (9) = 101 tests
+tests/            # 443 tests across 15 suites
 docs/             # Design specification
 examples/         # Runnable demos (breakout)
 ```

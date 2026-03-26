@@ -5,6 +5,10 @@ description: Declarative behavior components for composition
 
 Behaviors (L1c layer) provide declarative composition for common game patterns. They can be used as JSX children of game objects.
 
+```tsx
+import { SpringBehavior, OscillateBehavior, FollowBehavior, VelocityBehavior } from "solidion";
+```
+
 ## SpringBehavior
 
 Attach spring physics to a game object property.

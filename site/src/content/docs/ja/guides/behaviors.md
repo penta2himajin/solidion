@@ -5,6 +5,10 @@ description: コンポジション用の宣言的Behaviorコンポーネント
 
 Behaviors（L1cレイヤー）は一般的なゲームパターンのための宣言的なコンポジションを提供します。ゲームオブジェクトのJSX子要素として使用できます。
 
+```tsx
+import { SpringBehavior, OscillateBehavior, FollowBehavior, VelocityBehavior } from "solidion";
+```
+
 ## SpringBehavior
 
 ゲームオブジェクトのプロパティにスプリング物理を付与します。

@@ -18,6 +18,7 @@ export default defineConfig({
       "solidion/ecs": resolve(__dirname, "../../src/ecs/index.ts"),
       "solidion/core": resolve(__dirname, "../../src/core/index.ts"),
       "solidion/debug": resolve(__dirname, "../../src/debug/index.ts"),
+      "solidion/renderer": resolve(__dirname, "../../src/renderer.ts"),
       "solidion": resolve(__dirname, "../../src/index.ts"),
       // Deduplicate solid-js: ensure both example and library code use the
       // same instance, AND use the browser build (not server/SSR).
