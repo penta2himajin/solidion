@@ -7,8 +7,8 @@
     ".": {
       "import": "./src/index.ts"
     },
-    "./ecs": {
-      "import": "./src/ecs/index.ts"
+    "./recs": {
+      "import": "./src/recs/index.ts"
     },
     "./core": {
       "import": "./src/core/index.ts"

@@ -1,5 +1,5 @@
 import { createSignal, createMemo, onMount, onCleanup, type Accessor } from "solid-js";
-import { fsmStep, fsmSend } from "../ecs/steps";
+import { fsmStep, fsmSend } from "../recs/steps";
 
 export interface StateConfig<S extends string> {
   animation?: string | Accessor<string>;

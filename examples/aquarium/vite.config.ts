@@ -15,7 +15,7 @@ export default defineConfig({
   ],
   resolve: {
     alias: {
-      "solidion/ecs": resolve(__dirname, "../../src/ecs/index.ts"),
+      "solidion/recs": resolve(__dirname, "../../src/recs/index.ts"),
       "solidion/core": resolve(__dirname, "../../src/core/index.ts"),
       "solidion/debug": resolve(__dirname, "../../src/debug/index.ts"),
       "solidion/renderer": resolve(__dirname, "../../src/renderer.ts"),

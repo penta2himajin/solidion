@@ -1,5 +1,5 @@
 /**
- * Reactive ECS System components and iteration utilities.
+ * RECS System components and iteration utilities.
  *
  * Each System is a Solid component that:
  * - Returns null (no visual output)

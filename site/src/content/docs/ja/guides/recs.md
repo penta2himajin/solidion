@@ -1,9 +1,11 @@
 ---
-title: ECS（Entity Component System）
-description: 大量エンティティ処理のためのデータ駆動パターン
+title: RECS（Reactive ECS）
+description: 大量エンティティ処理のためのReactive Entity Component System
 ---
 
-ECSパターン（`solidion/ecs`）は、同じ種類のエンティティが大量にあるゲーム向けです — 10匹以上の魚、30発以上の弾丸など。SolidJSの`createStore`と純粋なステップ関数、フェーズ付き`System`コンポーネント、リアクティブインデックスセットを組み合わせます。
+RECS（`solidion/recs`）はSolidionのReactive Entity Component Systemです。同じ種類のエンティティが大量にあるゲーム向けです — 10匹以上の魚、30発以上の弾丸など。
+
+従来のECSでは全Systemが毎フレーム全エンティティを命令的に走査しますが、RECSはSolidJSの細粒度リアクティビティを活用します。storeの変更が自動的に描画に伝播し、`createIndex`がエンティティの状態変化をO(1)で追跡し、フェーズ付きSystemが離散的な反応と連続的な物理を分離します。
 
 ```tsx
 import {
@@ -11,22 +13,22 @@ import {
   springStep, velocityStep, followStep,
   oscillationStep, fsmStep, fsmSend,
   tweenStep, tweenLerp,
-} from "solidion/ecs";
+} from "solidion/recs";
 ```
 
-## ECS vs Hooksの使い分け
+## RECS vs Hooksの使い分け
 
 | パターン | 使用場面 |
 |---------|---------|
 | **Hooks**（`useSpring`、`useStateMachine`など） | 少数のエンティティ（1〜5）、エンティティごとに固有の複雑な動作 |
-| **ECS**（`System` + ステップ関数） | 多数のエンティティ（10+）、共通の動作定義、単一ストア |
+| **RECS**（`System` + ステップ関数） | 多数のエンティティ（10+）、共通の動作定義、単一ストア |
 
 ## 純粋ステップ関数
 
 ステップ関数は`useSpring`や`useOscillation`などの内部で使われているアルゴリズムと同じものを、バルク処理用の純粋関数として抽出したものです。現在の状態 + 設定 + デルタ時間を受け取り、次の状態を返します。
 
 ```tsx
-import { springStep, type SpringState, type SpringConfig } from "solidion/ecs";
+import { springStep, type SpringState, type SpringConfig } from "solidion/recs";
 
 const next: SpringState = springStep(
   { x: 0, y: 0, vx: 0, vy: 0 },
@@ -111,4 +113,4 @@ forActive(store.entities, (entity, index) => {
 
 ## 完全な例
 
-[examples/aquarium/](https://github.com/penta2himajin/solidion/tree/main/examples/aquarium)でECS + hooksのハイブリッドデモ（魚、餌、泡など）の完全な例をご覧ください。
+[examples/aquarium/](https://github.com/penta2himajin/solidion/tree/main/examples/aquarium)でRECS + hooksのハイブリッドデモ（魚、餌、泡など）の完全な例をご覧ください。

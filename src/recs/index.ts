@@ -1,9 +1,11 @@
 /**
- * Reactive ECS — Entity Component System pattern for Solidion.
+ * RECS — Reactive Entity Component System for Solidion.
  *
- * Combines createStore (reactive entity data) with pure step functions
- * (system logic), phased System components (frame execution), and
- * reactive index sets (O(1) entity tracking).
+ * Unlike traditional ECS where systems imperatively scan all entities
+ * every frame, RECS leverages SolidJS's fine-grained reactivity:
+ * - Store changes propagate automatically to rendering (reactive data → display)
+ * - createIndex tracks entity state changes at O(1) per change (reactive index)
+ * - Phased Systems (pre/main/post) separate discrete reactions from continuous physics
  *
  * Three execution phases per frame:
  *   "pre"  — React to store changes from the previous frame

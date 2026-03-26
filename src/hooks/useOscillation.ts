@@ -1,6 +1,6 @@
 import { createSignal, type Accessor } from "solid-js";
 import { useFrame } from "./useFrame";
-import { oscillationStep } from "../ecs/steps";
+import { oscillationStep } from "../recs/steps";
 
 export interface OscillationConfig {
   /** Amplitude per axis. e.g. { y: 10 } for vertical float. */

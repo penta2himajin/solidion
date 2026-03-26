@@ -21,9 +21,9 @@ import {
   followStep,
   fsmStep, fsmSend, type FSMState, type FSMStateConfig,
   tweenStep, tweenLerp, type TweenState,
-} from "../src/ecs/steps";
+} from "../src/recs/steps";
 
-import { createSystemFactory } from "../src/ecs/systems";
+import { createSystemFactory } from "../src/recs/systems";
 
 const tick = () => new Promise<void>(r => setTimeout(r, 0));
 
@@ -737,7 +737,7 @@ describe("System composition", () => {
 describe("createIndex", () => {
 
   it("tracks matching entities", async () => {
-    const { createIndex } = await import("../src/ecs/systems");
+    const { createIndex } = await import("../src/recs/systems");
 
     let indexSet!: ReadonlySet<number>;
 
@@ -770,7 +770,7 @@ describe("createIndex", () => {
   });
 
   it("updates reactively when entity state changes", async () => {
-    const { createIndex } = await import("../src/ecs/systems");
+    const { createIndex } = await import("../src/recs/systems");
 
     let indexSet!: ReadonlySet<number>;
     let setStore!: any;
@@ -817,7 +817,7 @@ describe("createIndex", () => {
   });
 
   it("cleans up on dispose", async () => {
-    const { createIndex } = await import("../src/ecs/systems");
+    const { createIndex } = await import("../src/recs/systems");
 
     let indexSet!: ReadonlySet<number>;
 
