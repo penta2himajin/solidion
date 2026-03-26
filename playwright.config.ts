@@ -38,6 +38,11 @@ export default defineConfig({
       testMatch: "null-pow.spec.ts",
       use: { baseURL: "http://localhost:3013" },
     },
+    {
+      name: "honeycomb-rush",
+      testMatch: "honeycomb-rush.spec.ts",
+      use: { baseURL: "http://localhost:3014" },
+    },
     // Mobile projects
     {
       name: "aquarium-mobile",
@@ -63,6 +68,11 @@ export default defineConfig({
       name: "null-pow-mobile",
       testMatch: "null-pow-mobile.spec.ts",
       use: { baseURL: "http://localhost:3013", viewport: mobileViewport, isMobile: true, hasTouch: true },
+    },
+    {
+      name: "honeycomb-rush-mobile",
+      testMatch: "honeycomb-rush-mobile.spec.ts",
+      use: { baseURL: "http://localhost:3014", viewport: mobileViewport, isMobile: true, hasTouch: true },
     },
   ],
   webServer: [
@@ -94,6 +104,12 @@ export default defineConfig({
       command: "npx vite preview --port 3013",
       cwd: "./examples/null-pow",
       port: 3013,
+      reuseExistingServer,
+    },
+    {
+      command: "npx vite preview --port 3014",
+      cwd: "./examples/honeycomb-rush",
+      port: 3014,
       reuseExistingServer,
     },
   ],
