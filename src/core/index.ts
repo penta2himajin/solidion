@@ -19,7 +19,7 @@ export {
 // Frame management
 export { useFrame } from "../hooks/useFrame";
 export { useTime } from "../hooks/useTime";
-export { createFrameManager, type FrameManager, type FrameCallback } from "./frame";
+export { createFrameManager, type FrameManager, type FrameCallback, type FramePhase } from "./frame";
 
 // Sync
 export { solidionFrameUpdate } from "./sync";

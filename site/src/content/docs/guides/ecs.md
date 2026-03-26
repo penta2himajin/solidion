@@ -3,11 +3,11 @@ title: ECS (Entity Component System)
 description: Data-driven pattern for bulk entity processing
 ---
 
-The ECS pattern (`solidion/ecs`) is for games with many entities of the same type — 10+ fish, 30+ bullets, etc. It combines SolidJS `createStore` with pure step functions and declarative `System` components.
+The ECS pattern (`solidion/ecs`) is for games with many entities of the same type — 10+ fish, 30+ bullets, etc. It combines SolidJS `createStore` with pure step functions, phased `System` components, and reactive index sets.
 
 ```tsx
-import { System, forActive, createSystemFactory } from "solidion/ecs";
 import {
+  System, forActive, createIndex, createSystemFactory,
   springStep, velocityStep, followStep,
   oscillationStep, fsmStep, fsmSend,
   tweenStep, tweenLerp,
@@ -28,7 +28,6 @@ Step functions are the same algorithms used inside `useSpring`, `useOscillation`
 ```tsx
 import { springStep, type SpringState, type SpringConfig } from "solidion/ecs";
 
-// Advance a spring by delta seconds
 const next: SpringState = springStep(
   { x: 0, y: 0, vx: 0, vy: 0 },
   { targetX: 100, targetY: 200, stiffness: 120, damping: 14 },
@@ -47,25 +46,57 @@ Available step functions:
 | `fsmStep` / `fsmSend` | Finite state machine transitions |
 | `tweenStep` / `tweenLerp` | Tween interpolation |
 
-## System Component
+## System Phases
 
-`System` registers a per-frame callback. Place it inside `<Game>` or `<Scene>` — JSX child order determines execution order.
+Systems support three execution phases per frame. This allows discrete logic (state reactions, collision detection) to run separately from continuous physics.
+
+| Phase | When it runs | Use for |
+|-------|-------------|---------|
+| `"pre"` | Before physics | Reacting to store changes from the previous frame |
+| `"main"` | Default | Physics, timers, dt integration |
+| `"post"` | After physics | Reacting to current frame's physics results |
 
 ```tsx
-const [store, setStore] = createStore({ fish: [...] });
-
 <Game>
-  <System
-    when={() => phase() === "play"}
-    update={(time, delta) => {
-      forActive(store.fish, (f, i) => {
-        const next = springStep(f, f.config, delta / 1000);
-        setStore("fish", i, next);
-      });
-    }}
-  />
+  <System phase="pre" update={() => {
+    // FSM state changed last frame → set new targets
+  }} />
+  <System update={(time, delta) => {
+    // Spring physics toward targets (default "main" phase)
+    forActive(store.fish, (f, i) => {
+      const next = springStep(f, f.config, delta / 1000);
+      setStore("fish", i, next);
+    });
+  }} />
+  <System phase="post" update={() => {
+    // Fish reached food? → trigger eating state
+  }} />
 </Game>
 ```
+
+Without `phase`, Systems run in `"main"`. Within each phase, execution follows JSX order.
+
+## createIndex
+
+Reactive index set for O(1) entity tracking. Instead of scanning all N entities every frame, track which indices match a condition and iterate only those.
+
+```tsx
+const hungrySet = createIndex(
+  () => store.fish.length,
+  (i) => store.fish[i].active && store.fish[i].fsmState === "hungry",
+);
+
+// When fish[3].fsmState changes to "hungry", hungrySet adds 3 (O(1))
+// When fish[3].fsmState changes to "idle", hungrySet removes 3 (O(1))
+
+<System phase="pre" update={() => {
+  for (const i of hungrySet) {
+    // Only hungry fish — O(hungrySet.size), not O(N)
+  }
+}} />
+```
+
+`createIndex` uses SolidJS's fine-grained reactivity internally: one `createEffect` per entity tracks its predicate, so only the entity whose property changed is re-evaluated.
 
 ## forActive
 
@@ -73,7 +104,6 @@ Helper to iterate only active entities in a store array:
 
 ```tsx
 forActive(store.entities, (entity, index) => {
-  // Only called for entities where entity.active !== false
   const next = velocityStep(entity, entity.config, delta / 1000);
   setStore("entities", index, next);
 });

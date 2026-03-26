@@ -58,7 +58,7 @@ solidion/
     hooks/          # L1a/L1b hooks: useTween, useSpring, useStateMachine, etc.
     behaviors/      # L1c composition components: SpringBehavior, OscillateBehavior, etc.
     components/     # Game, Scene, Preload, Overlay, GameLoop, Show, For
-    ecs/            # Data-driven ECS: pure step functions + System component
+    ecs/            # Reactive ECS: pure step functions + phased Systems + reactive index
     debug/          # Dev-only utilities: inspectBindings, profiling, expose
     renderer.ts     # solid-js/universal createRenderer implementation
     contexts.ts     # Solid contexts (Game, Scene, FrameManager, ParentNode)
@@ -76,14 +76,14 @@ npm install
 npm test
 ```
 
-443 tests across 15 suites:
+452 tests across 15 suites:
 
 | Suite | Tests | Scope |
 |---|---|---|
 | renderer | 110 | Renderer logic (mock Phaser) |
 | hooks | 107 | State machine, spring, tween, sequence, etc. |
 | props | 48 | Property application & composition |
-| ecs | 38 | Pure step functions & System component |
+| ecs | 44 | Pure step functions, phased Systems & reactive index |
 | texture | 29 | Texture auto-loading |
 | components | 18 | Sync, reapplyProp, preload |
 | visibility | 16 | Recursive visibility toggling |
@@ -94,7 +94,7 @@ npm test
 | events | 9 | Event name resolution |
 | store-compat | 8 | SolidJS store compatibility |
 | scene-stack | 5 | Scene stack management |
-| frame | 5 | Frame callback lifecycle |
+| frame | 8 | Frame callback lifecycle & phase ordering |
 
 ## Entry Points
 
@@ -109,8 +109,8 @@ import { useTween, useStateMachine, useSequence, useOverlap } from "solidion";
 import { useSpring, useFollow, useOscillation, useVelocity } from "solidion";
 import { SpringBehavior, OscillateBehavior, FollowBehavior, VelocityBehavior } from "solidion";
 
-// solidion/ecs — Data-driven ECS pattern (createStore + pure step functions + System)
-import { System, createSystemFactory, forActive } from "solidion/ecs";
+// solidion/ecs — Reactive ECS pattern (createStore + pure step functions + phased Systems + reactive index)
+import { System, createSystemFactory, forActive, createIndex } from "solidion/ecs";
 import { springStep, velocityStep, followStep, fsmStep, fsmSend, tweenStep, tweenLerp } from "solidion/ecs";
 
 // solidion/core — Frame-aware escape hatch (L3–L4)

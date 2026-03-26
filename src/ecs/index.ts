@@ -2,13 +2,18 @@
  * Reactive ECS — Entity Component System pattern for Solidion.
  *
  * Combines createStore (reactive entity data) with pure step functions
- * (system logic) and System components (frame execution).
+ * (system logic), phased System components (frame execution), and
+ * reactive index sets (O(1) entity tracking).
+ *
+ * Three execution phases per frame:
+ *   "pre"  — React to store changes from the previous frame
+ *   "main" — Physics, timers, dt integration (default)
+ *   "post" — React to current frame's physics results
  *
  * Use this pattern when:
  * - You have many entities of the same type (10+ fish, 30+ bullets)
  * - Entities share the same behavior definitions
  * - You want all state in a single createStore
- * - You want System execution order to be declarative (JSX ordering)
  *
  * Use hooks (useSpring, useStateMachine, etc.) when:
  * - You have few entities (1-5 characters)
@@ -26,5 +31,11 @@ export {
   tweenStep, tweenLerp, type TweenState, type TweenConfig, type TweenStepResult,
 } from "./steps";
 
-// System components + iteration utilities
-export { System, createSystemFactory, forActive, type SystemProps } from "./systems";
+// System components + iteration utilities + reactive index
+export {
+  System, createSystemFactory, forActive, createIndex,
+  type SystemProps,
+} from "./systems";
+
+// Re-export FramePhase for convenience
+export type { FramePhase } from "../core/frame";
