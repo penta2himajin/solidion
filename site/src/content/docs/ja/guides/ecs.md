@@ -3,11 +3,11 @@ title: ECS（Entity Component System）
 description: 大量エンティティ処理のためのデータ駆動パターン
 ---
 
-ECSパターン（`solidion/ecs`）は、同じ種類のエンティティが大量にあるゲーム向けです — 10匹以上の魚、30発以上の弾丸など。SolidJSの`createStore`と純粋なステップ関数、宣言的な`System`コンポーネントを組み合わせます。
+ECSパターン（`solidion/ecs`）は、同じ種類のエンティティが大量にあるゲーム向けです — 10匹以上の魚、30発以上の弾丸など。SolidJSの`createStore`と純粋なステップ関数、フェーズ付き`System`コンポーネント、リアクティブインデックスセットを組み合わせます。
 
 ```tsx
-import { System, forActive, createSystemFactory } from "solidion/ecs";
 import {
+  System, forActive, createIndex, createSystemFactory,
   springStep, velocityStep, followStep,
   oscillationStep, fsmStep, fsmSend,
   tweenStep, tweenLerp,
@@ -28,7 +28,6 @@ import {
 ```tsx
 import { springStep, type SpringState, type SpringConfig } from "solidion/ecs";
 
-// スプリングをdelta秒分進める
 const next: SpringState = springStep(
   { x: 0, y: 0, vx: 0, vy: 0 },
   { targetX: 100, targetY: 200, stiffness: 120, damping: 14 },
@@ -47,25 +46,57 @@ const next: SpringState = springStep(
 | `fsmStep` / `fsmSend` | 有限ステートマシン遷移 |
 | `tweenStep` / `tweenLerp` | トゥイーン補間 |
 
-## Systemコンポーネント
+## Systemフェーズ
 
-`System`はフレームごとのコールバックを登録します。`<Game>`または`<Scene>`内に配置してください — JSXの子要素の順序が実行順序を決定します。
+Systemは1フレーム内で3つの実行フェーズをサポートします。離散的なロジック（状態変化への反応、衝突判定）と連続的な物理を分離できます。
+
+| フェーズ | 実行タイミング | 用途 |
+|---------|-------------|------|
+| `"pre"` | 物理の前 | 前フレームのstore変更への反応 |
+| `"main"` | デフォルト | 物理、タイマー、dt積分 |
+| `"post"` | 物理の後 | 今フレームの物理結果への反応 |
 
 ```tsx
-const [store, setStore] = createStore({ fish: [...] });
-
 <Game>
-  <System
-    when={() => phase() === "play"}
-    update={(time, delta) => {
-      forActive(store.fish, (f, i) => {
-        const next = springStep(f, f.config, delta / 1000);
-        setStore("fish", i, next);
-      });
-    }}
-  />
+  <System phase="pre" update={() => {
+    // 前フレームでFSM状態が変化 → 新しいターゲットを設定
+  }} />
+  <System update={(time, delta) => {
+    // ターゲットに向かうスプリング物理（デフォルトの"main"フェーズ）
+    forActive(store.fish, (f, i) => {
+      const next = springStep(f, f.config, delta / 1000);
+      setStore("fish", i, next);
+    });
+  }} />
+  <System phase="post" update={() => {
+    // 魚が食べ物に到達した？ → 食事状態に遷移
+  }} />
 </Game>
 ```
+
+`phase`を指定しない場合、Systemは`"main"`で実行されます。各フェーズ内ではJSXの順序が実行順序になります。
+
+## createIndex
+
+O(1)のエンティティ追跡のためのリアクティブインデックスセット。毎フレームN個のエンティティを全走査する代わりに、条件に一致するインデックスを追跡し、それだけを反復処理します。
+
+```tsx
+const hungrySet = createIndex(
+  () => store.fish.length,
+  (i) => store.fish[i].active && store.fish[i].fsmState === "hungry",
+);
+
+// fish[3].fsmStateが"hungry"に変化 → hungrySetに3を追加 (O(1))
+// fish[3].fsmStateが"idle"に変化 → hungrySetから3を削除 (O(1))
+
+<System phase="pre" update={() => {
+  for (const i of hungrySet) {
+    // hungryな魚だけ — O(hungrySet.size), O(N)ではない
+  }
+}} />
+```
+
+`createIndex`はSolidJSの細粒度リアクティビティを内部的に使用します。エンティティごとに1つの`createEffect`がpredicateを追跡するため、プロパティが変更されたエンティティだけが再評価されます。
 
 ## forActive
 
@@ -73,7 +104,6 @@ const [store, setStore] = createStore({ fish: [...] });
 
 ```tsx
 forActive(store.entities, (entity, index) => {
-  // entity.active !== false のエンティティのみ呼ばれる
   const next = velocityStep(entity, entity.config, delta / 1000);
   setStore("entities", index, next);
 });

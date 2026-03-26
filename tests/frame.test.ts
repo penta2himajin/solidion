@@ -74,4 +74,43 @@ describe("FrameManager", () => {
     expect(selfRemovingCb).toHaveBeenCalledOnce();
     expect(otherCb).toHaveBeenCalledTimes(2);
   });
+
+  it("executes phases in order: pre → main → post", () => {
+    const fm = createFrameManager();
+    const order: string[] = [];
+    fm.register(() => order.push("main-1"));
+    fm.register(() => order.push("post-1"), "post");
+    fm.register(() => order.push("pre-1"), "pre");
+    fm.register(() => order.push("main-2"));
+    fm.register(() => order.push("pre-2"), "pre");
+
+    fm.update(0, 16);
+    expect(order).toEqual(["pre-1", "pre-2", "main-1", "main-2", "post-1"]);
+  });
+
+  it("defaults to main phase when no phase specified", () => {
+    const fm = createFrameManager();
+    const order: string[] = [];
+    fm.register(() => order.push("pre"), "pre");
+    fm.register(() => order.push("default"));
+    fm.register(() => order.push("post"), "post");
+
+    fm.update(0, 16);
+    expect(order).toEqual(["pre", "default", "post"]);
+  });
+
+  it("unregisters from the correct phase", () => {
+    const fm = createFrameManager();
+    const calls: string[] = [];
+    const unsub = fm.register(() => calls.push("pre"), "pre");
+    fm.register(() => calls.push("main"));
+
+    fm.update(0, 16);
+    expect(calls).toEqual(["pre", "main"]);
+
+    unsub();
+    calls.length = 0;
+    fm.update(100, 16);
+    expect(calls).toEqual(["main"]);
+  });
 });

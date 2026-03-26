@@ -107,7 +107,7 @@ export function useStateMachine<S extends string>(
       currentDuration = stateConfig.duration;
       currentOnComplete = stateConfig.onComplete;
     } else {
-      sceneTimer = scene.time.delayedCall(stateConfig.duration, () => {
+      sceneTimer = scene!.time.delayedCall(stateConfig.duration, () => {
         transition(stateConfig.onComplete!);
       });
     }

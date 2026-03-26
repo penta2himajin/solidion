@@ -1440,7 +1440,7 @@ describe("Renderer Exports (renderer.ts coverage)", () => {
 
   describe("mergeProps (actual)", () => {
     it("merges multiple prop objects", () => {
-      const merged = mergeProps({ x: 10, y: 20 }, { y: 30, alpha: 0.5 });
+      const merged = mergeProps({ x: 10, y: 20 }, { y: 30, alpha: 0.5 }) as Record<string, number>;
       expect(merged.y).toBe(30);
       expect(merged.alpha).toBe(0.5);
       expect(merged.x).toBe(10);

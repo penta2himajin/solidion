@@ -637,4 +637,207 @@ describe("System composition", () => {
 
     dispose();
   });
+
+  it("Systems respect phase ordering: pre → main → post", () => {
+    const fm = createFrameManager();
+    const System = createSystemFactory(fm.register);
+    const order: string[] = [];
+
+    createRoot(d => {
+      System({ update: () => order.push("main-1") });
+      System({ update: () => order.push("post"), phase: "post" });
+      System({ update: () => order.push("pre"), phase: "pre" });
+      System({ update: () => order.push("main-2") });
+
+      fm.update(0, 16);
+      d();
+    });
+
+    expect(order).toEqual(["pre", "main-1", "main-2", "post"]);
+  });
+
+  it("full loop with phases: pre reacts, main physics, post detects", async () => {
+    const fm = createFrameManager();
+    const System = createSystemFactory(fm.register);
+
+    const log: string[] = [];
+
+    const dispose = createRoot(d => {
+      const [store, setStore] = createStore({
+        fish: [{ x: 0, vx: 10, state: "idle", nearWall: false }],
+      });
+
+      // pre: react to state changes
+      System({ update: () => {
+        log.push(`pre:state=${store.fish[0].state}`);
+      }, phase: "pre" });
+
+      // main: physics
+      System({ update: (_, delta) => {
+        const dt = delta / 1000;
+        const f = store.fish[0];
+        setStore("fish", 0, "x", f.x + f.vx * dt);
+        log.push(`main:x=${store.fish[0].x.toFixed(2)}`);
+      }});
+
+      // post: detect wall collision
+      System({ update: () => {
+        const f = store.fish[0];
+        if (f.x > 0.1 && !f.nearWall) {
+          setStore("fish", 0, "nearWall", true);
+          setStore("fish", 0, "state", "turning");
+          log.push("post:wall!");
+        }
+      }, phase: "post" });
+
+      return d;
+    });
+
+    fm.update(0, 16);
+    await tick();
+
+    // pre runs first (sees idle), main moves, post detects
+    expect(log[0]).toBe("pre:state=idle");
+    expect(log[1]).toContain("main:x=");
+    expect(log[2]).toBe("post:wall!");
+
+    dispose();
+  });
+
+  it("System when guard works with phases", () => {
+    const fm = createFrameManager();
+    const System = createSystemFactory(fm.register);
+    const calls: string[] = [];
+    let enabled = false;
+
+    createRoot(d => {
+      System({
+        update: () => calls.push("pre"),
+        phase: "pre",
+        when: () => enabled,
+      });
+      System({ update: () => calls.push("main") });
+
+      fm.update(0, 16);
+      expect(calls).toEqual(["main"]); // pre skipped
+
+      enabled = true;
+      fm.update(16, 16);
+      expect(calls).toEqual(["main", "pre", "main"]); // pre now runs
+
+      d();
+    });
+  });
+});
+
+// ============================================================
+// 4. createIndex
+// ============================================================
+
+describe("createIndex", () => {
+
+  it("tracks matching entities", async () => {
+    const { createIndex } = await import("../src/ecs/systems");
+
+    let indexSet!: ReadonlySet<number>;
+
+    const dispose = createRoot(d => {
+      const [store] = createStore({
+        items: [
+          { active: true, state: "idle" },
+          { active: true, state: "hungry" },
+          { active: false, state: "hungry" },
+        ],
+      });
+
+      indexSet = createIndex(
+        () => store.items.length,
+        (i) => store.items[i].active && store.items[i].state === "hungry",
+      );
+
+      return d;
+    });
+
+    await tick();
+
+    // Only index 1 matches (active + hungry)
+    expect(indexSet.has(0)).toBe(false);
+    expect(indexSet.has(1)).toBe(true);
+    expect(indexSet.has(2)).toBe(false);
+    expect(indexSet.size).toBe(1);
+
+    dispose();
+  });
+
+  it("updates reactively when entity state changes", async () => {
+    const { createIndex } = await import("../src/ecs/systems");
+
+    let indexSet!: ReadonlySet<number>;
+    let setStore!: any;
+
+    const dispose = createRoot(d => {
+      const [store, _setStore] = createStore({
+        items: [
+          { active: true, state: "idle" },
+          { active: true, state: "idle" },
+        ],
+      });
+      setStore = _setStore;
+
+      indexSet = createIndex(
+        () => store.items.length,
+        (i) => store.items[i].active && store.items[i].state === "hungry",
+      );
+
+      return d;
+    });
+
+    await tick();
+    expect(indexSet.size).toBe(0);
+
+    // Change item 0 to hungry
+    setStore("items", 0, "state", "hungry");
+    await tick();
+    expect(indexSet.has(0)).toBe(true);
+    expect(indexSet.size).toBe(1);
+
+    // Change item 1 to hungry too
+    setStore("items", 1, "state", "hungry");
+    await tick();
+    expect(indexSet.has(1)).toBe(true);
+    expect(indexSet.size).toBe(2);
+
+    // Change item 0 back to idle
+    setStore("items", 0, "state", "idle");
+    await tick();
+    expect(indexSet.has(0)).toBe(false);
+    expect(indexSet.size).toBe(1);
+
+    dispose();
+  });
+
+  it("cleans up on dispose", async () => {
+    const { createIndex } = await import("../src/ecs/systems");
+
+    let indexSet!: ReadonlySet<number>;
+
+    const dispose = createRoot(d => {
+      const [store] = createStore({
+        items: [{ active: true, state: "hungry" }],
+      });
+
+      indexSet = createIndex(
+        () => store.items.length,
+        (i) => store.items[i].active && store.items[i].state === "hungry",
+      );
+
+      return d;
+    });
+
+    await tick();
+    expect(indexSet.size).toBe(1);
+
+    dispose();
+    expect(indexSet.size).toBe(0);
+  });
 });
